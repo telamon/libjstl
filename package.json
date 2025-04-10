@@ -1,0 +1,17 @@
+{
+  "private": true,
+  "name": "libjstl",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/holepunchto/libjstl.git"
+  },
+  "author": "Holepunch",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/holepunchto/libjstl/issues"
+  },
+  "homepage": "https://github.com/holepunchto/libjstl#readme",
+  "devDependencies": {
+    "cmake-fetch": "^1.4.1"
+  }
+}
