@@ -6,10 +6,8 @@
 
 #include "../include/jstl.h"
 
-uint32_t
-on_call(js_receiver_t receiver, js_typedarray_t<uint8_t> buffer) {
-  return buffer.len;
-}
+void
+on_call(void) {}
 
 int
 main() {
@@ -34,7 +32,7 @@ main() {
   assert(e == 0);
 
   js_value_t *fn;
-  e = js_create_typed_function<on_call, uint32_t, js_receiver_t, js_typedarray_t<uint8_t>>(env, "hello", &fn);
+  e = js_create_typed_function<on_call, void>(env, "hello", &fn);
   assert(e == 0);
 
   js_value_t *global;
@@ -45,7 +43,7 @@ main() {
   assert(e == 0);
 
   js_value_t *script;
-  e = js_create_string_utf8(env, (utf8_t *) "let i = 0, j; while (i++ < 200000) j = hello(new Uint8Array(4))", -1, &script);
+  e = js_create_string_utf8(env, (utf8_t *) "let i = 0, j; while (i++ < 200000) hello()", -1, &script);
   assert(e == 0);
 
   js_value_t *result;

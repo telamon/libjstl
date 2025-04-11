@@ -1,7 +1,7 @@
 fetch_package("github:holepunchto/libjs")
 
 list(APPEND tests
-  typed-function
+  create-typed-function-return-void
 )
 
 foreach(test IN LISTS tests)

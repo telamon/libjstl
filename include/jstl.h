@@ -125,6 +125,27 @@ struct js_type_container_t<js_receiver_t> {
 };
 
 template <>
+struct js_type_container_t<void> {
+  using type = void;
+
+  static constexpr auto
+  signature() {
+    return js_undefined;
+  }
+
+  static auto
+  marshall(js_env_t *env, js_callback_info_t *) {
+    int err;
+
+    js_value_t *result;
+    err = js_get_undefined(env, &result);
+    assert(err == 0);
+
+    return result;
+  }
+};
+
+template <>
 struct js_type_container_t<bool> {
   using type = bool;
 
@@ -447,9 +468,13 @@ js_typed_callback() {
     err = js_get_typed_callback_info(info, &env, nullptr);
     assert(err == 0);
 
-    auto result = fn(js_type_container_t<A>::unmarshall(env, info, args)...);
+    if constexpr (std::is_same<R, void>()) {
+      fn(js_type_container_t<A>::unmarshall(env, info, args)...);
+    } else {
+      auto result = fn(js_type_container_t<A>::unmarshall(env, info, args)...);
 
-    return js_type_container_t<R>::marshall(env, info, result);
+      return js_type_container_t<R>::marshall(env, info, result);
+    }
   };
 }
 
@@ -462,25 +487,33 @@ js_untyped_callback(std::index_sequence<I...>) {
     size_t argc = sizeof...(A);
     js_value_t *argv[sizeof...(A)];
 
-    using head = std::tuple_element<0, std::tuple<A...>>::type;
+    if constexpr (std::tuple_size<std::tuple<A...>>() > 0) {
+      using head = std::tuple_element<0, std::tuple<A...>>::type;
 
-    if constexpr (std::is_same<head, js_receiver_t>()) {
-      argc--;
+      if constexpr (std::is_same<head, js_receiver_t>()) {
+        argc--;
 
-      err = js_get_callback_info(env, info, &argc, &argv[1], &argv[0], NULL);
-      assert(err == 0);
+        err = js_get_callback_info(env, info, &argc, &argv[1], &argv[0], NULL);
+        assert(err == 0);
 
-      argc++;
-    } else {
-      err = js_get_callback_info(env, info, &argc, argv, NULL, NULL);
-      assert(err == 0);
+        argc++;
+      } else {
+        err = js_get_callback_info(env, info, &argc, argv, NULL, NULL);
+        assert(err == 0);
+      }
+
+      assert(argc == sizeof...(A));
     }
 
-    assert(argc == sizeof...(A));
+    if constexpr (std::is_same<R, void>()) {
+      fn(js_type_container_t<A>::unmarshall(env, info, argv[I])...);
 
-    auto result = fn(js_type_container_t<A>::unmarshall(env, info, argv[I])...);
+      return js_type_container_t<R>::marshall(env, info);
+    } else {
+      auto result = fn(js_type_container_t<A>::unmarshall(env, info, argv[I])...);
 
-    return js_type_container_t<R>::marshall(env, info, result);
+      return js_type_container_t<R>::marshall(env, info, result);
+    }
   };
 }
 
