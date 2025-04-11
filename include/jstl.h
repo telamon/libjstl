@@ -1,13 +1,11 @@
-#ifndef JSTL_H
-#define JSTL_H
-
-#ifdef __cplusplus
+#pragma once
 
 #include <string>
 #include <type_traits>
 #include <utility>
 
 #include <js.h>
+#include <utf.h>
 
 namespace {
 
@@ -365,7 +363,7 @@ struct js_type_container_t<js_arraybuffer_t> {
   }
 
   static auto
-  marshall(js_env_t *env, js_arraybuffer_t value) {
+  marshall(js_env_t *env, js_arraybuffer_t &&value) {
     int err;
 
     js_value_t *result;
@@ -380,13 +378,13 @@ struct js_type_container_t<js_arraybuffer_t> {
   }
 
   static auto
-  marshall(js_env_t *env, js_typed_callback_info_t *, js_arraybuffer_t value) {
-    return marshall(env, value);
+  marshall(js_env_t *env, js_typed_callback_info_t *, js_arraybuffer_t &&value) {
+    return marshall(env, std::move(value));
   }
 
   static auto
-  marshall(js_env_t *env, js_callback_info_t *, js_arraybuffer_t value) {
-    return marshall(env, value);
+  marshall(js_env_t *env, js_callback_info_t *, js_arraybuffer_t &&value) {
+    return marshall(env, std::move(value));
   }
 
   static auto
@@ -410,7 +408,7 @@ struct js_type_container_t<js_typedarray_t<T>> {
   }
 
   static auto
-  marshall(js_env_t *env, js_typedarray_t<T> value) {
+  marshall(js_env_t *env, js_typedarray_t<T> &&value) {
     int err;
 
     js_typedarray_type_t type;
@@ -438,13 +436,13 @@ struct js_type_container_t<js_typedarray_t<T>> {
   }
 
   static auto
-  marshall(js_env_t *env, js_typed_callback_info_t *, js_typedarray_t<T> value) {
-    return marshall(env, value);
+  marshall(js_env_t *env, js_typed_callback_info_t *, js_typedarray_t<T> &&value) {
+    return marshall(env, std::move(value));
   }
 
   static auto
-  marshall(js_env_t *env, js_callback_info_t *, js_typedarray_t<T> value) {
-    return marshall(env, value);
+  marshall(js_env_t *env, js_callback_info_t *, js_typedarray_t<T> &&value) {
+    return marshall(env, std::move(value));
   }
 
   static auto
@@ -473,7 +471,7 @@ js_typed_callback() {
     } else {
       auto result = fn(js_type_container_t<A>::unmarshall(env, info, args)...);
 
-      return js_type_container_t<R>::marshall(env, info, result);
+      return js_type_container_t<R>::marshall(env, info, std::move(result));
     }
   };
 }
@@ -512,7 +510,7 @@ js_untyped_callback(std::index_sequence<I...>) {
     } else {
       auto result = fn(js_type_container_t<A>::unmarshall(env, info, argv[I])...);
 
-      return js_type_container_t<R>::marshall(env, info, result);
+      return js_type_container_t<R>::marshall(env, info, std::move(result));
     }
   };
 }
@@ -550,8 +548,14 @@ js_create_typed_function(js_env_t *env, std::string name, js_value_t **result) {
   return js_create_typed_function<fn, R, A...>(env, name.data(), name.length(), result);
 }
 
+constexpr auto
+js_create_string(js_env_t *env, const utf8_t *str, size_t len, js_value_t **result) {
+  return js_create_string_utf8(env, str, len, result);
+}
+
+constexpr auto
+js_create_string(js_env_t *env, const std::string str, js_value_t **result) {
+  return js_create_string_utf8(env, (const utf8_t *) str.data(), str.length(), result);
+}
+
 } // namespace
-
-#endif
-
-#endif // JSTL_H
