@@ -37,15 +37,9 @@ struct js_arraybuffer_t : js_handle_t {
   uint8_t *data;
   size_t len;
 
-  js_arraybuffer_t() : data(nullptr), len(0) {}
+  js_arraybuffer_t() : js_handle_t() {}
 
-  js_arraybuffer_t(uint8_t *data, size_t len) : data(data), len(len) {}
-
-  js_arraybuffer_t(js_env_t *env, js_value_t *value) : js_handle_t(value) {
-    int err;
-    err = js_get_arraybuffer_info(env, value, reinterpret_cast<void **>(&data), &len);
-    assert(err == 0);
-  }
+  js_arraybuffer_t(js_value_t *value) : js_handle_t(value) {}
 
   js_arraybuffer_t(js_arraybuffer_t &&) = default;
 };
@@ -55,17 +49,9 @@ struct js_typedarray_t : js_handle_t {
   T *data;
   size_t len;
 
-  js_typedarray_t() : data(nullptr), len(0) {}
-
-  js_typedarray_t(T *data, size_t len) : data(data), len(len) {}
+  js_typedarray_t() : js_handle_t() {}
 
   js_typedarray_t(js_value_t *value) : js_handle_t(value) {}
-
-  js_typedarray_t(js_env_t *env, js_value_t *value) : js_handle_t(value) {
-    int err;
-    err = js_get_typedarray_info(env, value, nullptr, reinterpret_cast<void **>(&data), &len, nullptr, nullptr);
-    assert(err == 0);
-  }
 
   js_typedarray_t(js_typedarray_t &&) = default;
 
@@ -77,11 +63,7 @@ struct js_typedarray_with_view_t : js_typedarray_t<T> {
   js_env_t *env;
   js_typedarray_view_t *view;
 
-  js_typedarray_with_view_t(js_env_t *env, js_value_t *value) : js_typedarray_t<T>(value), env(env) {
-    int err;
-    err = js_get_typedarray_view(env, value, nullptr, reinterpret_cast<void **>(&this->data), &this->len, &view);
-    assert(err == 0);
-  }
+  js_typedarray_with_view_t(js_env_t *env, js_value_t *value) : js_typedarray_t<T>(value), env(env), view(nullptr) {}
 
   js_typedarray_with_view_t(js_typedarray_with_view_t &&that)
       : view(std::exchange(that.view, nullptr)) {}
@@ -111,12 +93,12 @@ struct js_type_container_t<js_receiver_t> {
   }
 
   static auto
-  unmarshall(js_env_t *env, js_typed_callback_info_t *, js_value_t *value) {
+  unmarshall(js_env_t *, js_typed_callback_info_t *, js_value_t *value) {
     return js_receiver_t(value);
   }
 
   static auto
-  unmarshall(js_env_t *env, js_callback_info_t *, js_value_t *value) {
+  unmarshall(js_env_t *, js_callback_info_t *, js_value_t *value) {
     return js_receiver_t(value);
   }
 };
@@ -362,38 +344,34 @@ struct js_type_container_t<js_arraybuffer_t> {
   }
 
   static auto
-  marshall(js_env_t *env, js_arraybuffer_t &&value) {
+  marshall(js_env_t *env, js_typed_callback_info_t *, const js_arraybuffer_t &arraybuffer) {
+    return arraybuffer.value;
+  }
+
+  static auto
+  marshall(js_env_t *env, js_callback_info_t *, const js_arraybuffer_t &arraybuffer) {
+    return arraybuffer.value;
+  }
+
+  static auto
+  unmarshall(js_env_t *env, js_value_t *value) {
     int err;
 
-    js_value_t *result;
-
-    void *data;
-    err = js_create_arraybuffer(env, value.len, &data, &result);
+    js_arraybuffer_t result(value);
+    err = js_get_arraybuffer_info(env, value, (void **) &result.data, &result.len);
     assert(err == 0);
-
-    memcpy(data, value.data, value.len);
 
     return result;
   }
 
   static auto
-  marshall(js_env_t *env, js_typed_callback_info_t *, js_arraybuffer_t &&value) {
-    return marshall(env, std::move(value));
-  }
-
-  static auto
-  marshall(js_env_t *env, js_callback_info_t *, js_arraybuffer_t &&value) {
-    return marshall(env, std::move(value));
-  }
-
-  static auto
   unmarshall(js_env_t *env, js_typed_callback_info_t *, js_value_t *value) {
-    return js_arraybuffer_t(env, value);
+    return unmarshall(env, value);
   }
 
   static auto
   unmarshall(js_env_t *env, js_callback_info_t *, js_value_t *value) {
-    return js_arraybuffer_t(env, value);
+    return unmarshall(env, value);
   }
 };
 
@@ -407,51 +385,35 @@ struct js_type_container_t<js_typedarray_t<T>> {
   }
 
   static auto
-  marshall(js_env_t *env, js_typedarray_t<T> &&value) {
+  marshall(js_env_t *env, js_typed_callback_info_t *, const js_typedarray_t<T> &typedarray) {
+    return typedarray.value;
+  }
+
+  static auto
+  marshall(js_env_t *env, js_callback_info_t *, const js_typedarray_t<T> &typedarray) {
+    return typedarray.value;
+  }
+
+  static auto
+  unmarshall(js_env_t *env, js_typed_callback_info_t *info, js_value_t *value) {
     int err;
 
-    js_typedarray_type_t type;
-    size_t bytes_per_element = 1;
-
-    if constexpr (std::is_same<T, uint8_t>()) {
-      type = js_uint8array;
-    } else {
-      static_assert(false, "Unsupported typed array element type");
-    }
-
-    js_value_t *arraybuffer;
-
-    void *data;
-    err = js_create_arraybuffer(env, value.len * bytes_per_element, &data, &arraybuffer);
-    assert(err == 0);
-
-    memcpy(data, value.data, value.len * bytes_per_element);
-
-    js_value_t *result;
-    err = js_create_typedarray(env, type, value.len, arraybuffer, 0, &result);
+    js_typedarray_with_view_t<T> result(env, value);
+    err = js_get_typedarray_view(env, value, nullptr, (void **) &result.data, &result.len, &result.view);
     assert(err == 0);
 
     return result;
   }
 
   static auto
-  marshall(js_env_t *env, js_typed_callback_info_t *, js_typedarray_t<T> &&value) {
-    return marshall(env, std::move(value));
-  }
-
-  static auto
-  marshall(js_env_t *env, js_callback_info_t *, js_typedarray_t<T> &&value) {
-    return marshall(env, std::move(value));
-  }
-
-  static auto
-  unmarshall(js_env_t *env, js_typed_callback_info_t *info, js_value_t *value) {
-    return js_typedarray_with_view_t<T>(env, value);
-  }
-
-  static auto
   unmarshall(js_env_t *env, js_callback_info_t *info, js_value_t *value) {
-    return js_typedarray_t<T>(env, value);
+    int err;
+
+    js_typedarray_t<T> result(value);
+    err = js_get_typedarray_info(env, value, nullptr, (void **) &result.data, &result.len, nullptr, nullptr);
+    assert(err == 0);
+
+    return result;
   }
 };
 
@@ -466,9 +428,9 @@ js_typed_callback() {
     assert(err == 0);
 
     if constexpr (std::is_same<R, void>()) {
-      fn(js_type_container_t<A>::unmarshall(env, info, args)...);
+      fn(env, js_type_container_t<A>::unmarshall(env, info, args)...);
     } else {
-      auto result = fn(js_type_container_t<A>::unmarshall(env, info, args)...);
+      auto result = fn(env, js_type_container_t<A>::unmarshall(env, info, args)...);
 
       return js_type_container_t<R>::marshall(env, info, std::move(result));
     }
@@ -503,11 +465,11 @@ js_untyped_callback(std::index_sequence<I...>) {
     }
 
     if constexpr (std::is_same<R, void>()) {
-      fn(js_type_container_t<A>::unmarshall(env, info, argv[I])...);
+      fn(env, js_type_container_t<A>::unmarshall(env, info, argv[I])...);
 
       return js_type_container_t<R>::marshall(env, info);
     } else {
-      auto result = fn(js_type_container_t<A>::unmarshall(env, info, argv[I])...);
+      auto result = fn(env, js_type_container_t<A>::unmarshall(env, info, argv[I])...);
 
       return js_type_container_t<R>::marshall(env, info, std::move(result));
     }
@@ -522,7 +484,7 @@ js_untyped_callback() {
 
 template <auto fn, typename R, typename... A>
 constexpr auto
-js_create_typed_function(js_env_t *env, const char *name, size_t len, js_value_t **result) {
+js_create_typed_function(js_env_t *env, const char *name, size_t len, js_function_t<R, A...> &result) {
   auto typed = js_typed_callback<fn, R, A...>();
 
   auto untyped = js_untyped_callback<fn, R, A...>();
@@ -538,25 +500,13 @@ js_create_typed_function(js_env_t *env, const char *name, size_t len, js_value_t
   signature.args_len = sizeof...(A);
   signature.args = args;
 
-  return js_create_typed_function(env, name, len, untyped, &signature, reinterpret_cast<const void *>(typed), nullptr, result);
-}
-
-template <auto fn, typename R, typename... A>
-constexpr auto
-js_create_typed_function(js_env_t *env, const std::string name, js_value_t **result) {
-  return js_create_typed_function<fn, R, A...>(env, name.data(), name.length(), result);
-}
-
-template <auto fn, typename R, typename... A>
-constexpr auto
-js_create_typed_function(js_env_t *env, const char *name, size_t len, js_function_t<R, A...> &result) {
-  return js_create_typed_function<fn, R, A...>(env, name, len, &result.value);
+  return js_create_typed_function(env, name, len, untyped, &signature, (const void *) typed, nullptr, &result.value);
 }
 
 template <auto fn, typename R, typename... A>
 constexpr auto
 js_create_typed_function(js_env_t *env, const std::string name, js_function_t<R, A...> &result) {
-  return js_create_typed_function<fn, R, A...>(env, name, &result.value);
+  return js_create_typed_function<fn, R, A...>(env, name.data(), name.length(), result);
 }
 
 constexpr auto
@@ -575,13 +525,67 @@ js_create_string(js_env_t *env, const std::string str, js_string_t<utf8_t> &resu
 }
 
 constexpr auto
+js_create_arraybuffer(js_env_t *env, size_t len, void *&data, js_arraybuffer_t &result) {
+  return js_create_arraybuffer(env, len, &data, &result.value);
+}
+
+constexpr auto
+js_create_arraybuffer(js_env_t *env, size_t len, uint8_t *&data, js_arraybuffer_t &result) {
+  return js_create_arraybuffer(env, len, (void **) &data, &result.value);
+}
+
+template <typename T>
+constexpr auto
+js_create_typedarray(js_env_t *env, size_t len, const js_arraybuffer_t &arraybuffer, size_t offset, js_typedarray_t<T> &result) {
+  js_typedarray_type_t type;
+
+  if constexpr (std::is_same<T, int8_t>()) {
+    type = js_int8array;
+  } else if constexpr (std::is_same<T, uint8_t>()) {
+    type = js_uint8array;
+  } else if constexpr (std::is_same<T, int16_t>()) {
+    type = js_int16array;
+  } else if constexpr (std::is_same<T, uint16_t>()) {
+    type = js_uint16array;
+  } else if constexpr (std::is_same<T, int32_t>()) {
+    type = js_int32array;
+  } else if constexpr (std::is_same<T, uint32_t>()) {
+    type = js_uint32array;
+  } else if constexpr (std::is_same<T, float>()) {
+    type = js_float32array;
+  } else if constexpr (std::is_same<T, double>()) {
+    type = js_float64array;
+  } else if constexpr (std::is_same<T, int64_t>()) {
+    type = js_bigint64array;
+  } else if constexpr (std::is_same<T, uint64_t>()) {
+    type = js_biguint64array;
+  } else {
+    static_assert(false, "Unsupported typed array element type");
+  }
+
+  return js_create_typedarray(env, type, len, arraybuffer.value, offset, &result.value);
+}
+
+constexpr auto
 js_get_global(js_env_t *env, js_object_t &result) {
   return js_get_global(env, &result.value);
 }
 
 constexpr auto
-js_set_named_property(js_env_t *env, const js_object_t &object, const char *name, const js_handle_t &value) {
+js_set_property(js_env_t *env, const js_object_t &object, const char *name, const js_handle_t &value) {
   return js_set_named_property(env, object.value, name, value.value);
+}
+
+template <typename T>
+constexpr auto
+js_run_script(js_env_t *env, const char *file, size_t len, int offset, const js_string_t<T> &source, js_handle_t &result) {
+  return js_run_script(env, file, len, offset, source.value, &result.value);
+}
+
+template <typename T>
+constexpr auto
+js_run_script(js_env_t *env, std::string file, int offset, const js_string_t<T> &source, js_handle_t &result) {
+  return js_run_script(env, file.data(), file.length(), offset, source.value, &result.value);
 }
 
 } // namespace

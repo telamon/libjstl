@@ -7,8 +7,26 @@
 #include "../include/jstl.h"
 
 js_typedarray_t<uint8_t>
-on_call(void) {
-  return {(uint8_t *) "hello", 5};
+on_call(js_env_t *env) {
+  int e;
+
+  uint8_t *data;
+
+  js_arraybuffer_t arraybuffer;
+  e = js_create_arraybuffer(env, 5, data, arraybuffer);
+  assert(e == 0);
+
+  data[0] = 'h';
+  data[1] = 'e';
+  data[2] = 'l';
+  data[3] = 'l';
+  data[4] = 'o';
+
+  js_typedarray_t<uint8_t> typedarray;
+  e = js_create_typedarray(env, 5, arraybuffer, 0, typedarray);
+  assert(e == 0);
+
+  return typedarray;
 }
 
 int
@@ -41,15 +59,15 @@ main() {
   e = js_get_global(env, global);
   assert(e == 0);
 
-  e = js_set_named_property(env, global, "hello", fn);
+  e = js_set_property(env, global, "hello", fn);
   assert(e == 0);
 
   js_string_t<utf8_t> script;
   e = js_create_string(env, "let i = 0, j; while (i++ < 200000) j = hello(); j", script);
   assert(e == 0);
 
-  js_value_t *result;
-  e = js_run_script(env, NULL, 0, 0, script.value, &result);
+  js_handle_t result;
+  e = js_run_script(env, "test", 0, script, result);
   assert(e == 0);
 
   e = js_close_handle_scope(env, scope);
