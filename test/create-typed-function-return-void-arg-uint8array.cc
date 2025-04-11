@@ -6,10 +6,8 @@
 
 #include "../include/jstl.h"
 
-js_typedarray_t<uint8_t>
-on_call(void) {
-  return {(uint8_t *) "hello", 5};
-}
+void
+on_call(js_typedarray_t<uint8_t>) {}
 
 int
 main() {
@@ -33,7 +31,7 @@ main() {
   e = js_open_handle_scope(env, &scope);
   assert(e == 0);
 
-  js_function_t<js_typedarray_t<uint8_t>> fn;
+  js_function_t<void, js_typedarray_t<uint8_t>> fn;
   e = js_create_typed_function<on_call>(env, "hello", fn);
   assert(e == 0);
 
@@ -45,7 +43,7 @@ main() {
   assert(e == 0);
 
   js_string_t<utf8_t> script;
-  e = js_create_string(env, "let i = 0, j; while (i++ < 200000) j = hello(); j", script);
+  e = js_create_string(env, "let i = 0, j; while (i++ < 200000) hello(new Uint8Array(1, 2, 3, 4))", script);
   assert(e == 0);
 
   js_value_t *result;
