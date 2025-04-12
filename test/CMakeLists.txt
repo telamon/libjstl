@@ -13,7 +13,7 @@ foreach(test IN LISTS tests)
     ${test}
     PROPERTIES
     C_STANDARD 11
-    CXX_STANDARD 20
+    CXX_STANDARD 23
   )
 
   target_link_libraries(

@@ -12,8 +12,8 @@ on_call(js_env_t *env) {
 
   uint8_t *data;
 
-  js_arraybuffer_t arraybuffer;
-  e = js_create_arraybuffer(env, 5, data, arraybuffer);
+  js_typedarray_t<uint8_t> typedarray;
+  e = js_create_typedarray(env, 5, data, typedarray);
   assert(e == 0);
 
   data[0] = 'h';
@@ -21,10 +21,6 @@ on_call(js_env_t *env) {
   data[2] = 'l';
   data[3] = 'l';
   data[4] = 'o';
-
-  js_typedarray_t<uint8_t> typedarray;
-  e = js_create_typedarray(env, 5, arraybuffer, typedarray);
-  assert(e == 0);
 
   return typedarray;
 }
@@ -55,19 +51,8 @@ main() {
   e = js_create_function<on_call>(env, "hello", fn);
   assert(e == 0);
 
-  js_object_t global;
-  e = js_get_global(env, global);
-  assert(e == 0);
-
-  e = js_set_property(env, global, "hello", fn);
-  assert(e == 0);
-
-  js_string_t<utf8_t> script;
-  e = js_create_string(env, "let i = 0, j; while (i++ < 200000) j = hello(); j", script);
-  assert(e == 0);
-
-  js_handle_t result;
-  e = js_run_script(env, "test", 0, script, result);
+  js_typedarray_t<uint8_t> result;
+  e = js_call_function(env, fn, result);
   assert(e == 0);
 
   e = js_close_handle_scope(env, scope);

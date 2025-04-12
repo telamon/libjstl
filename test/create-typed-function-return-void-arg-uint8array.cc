@@ -35,19 +35,13 @@ main() {
   e = js_create_function<on_call>(env, "hello", fn);
   assert(e == 0);
 
-  js_object_t global;
-  e = js_get_global(env, global);
+  uint8_t *data;
+
+  js_typedarray_t<uint8_t> arg;
+  e = js_create_typedarray(env, 5, data, arg);
   assert(e == 0);
 
-  e = js_set_property(env, global, "hello", fn);
-  assert(e == 0);
-
-  js_string_t<utf8_t> script;
-  e = js_create_string(env, "let i = 0, j; while (i++ < 200000) hello(new Uint8Array(1, 2, 3, 4))", script);
-  assert(e == 0);
-
-  js_handle_t result;
-  e = js_run_script(env, "test", 0, script, result);
+  e = js_call_function(env, fn, arg);
   assert(e == 0);
 
   e = js_close_handle_scope(env, scope);

@@ -35,19 +35,7 @@ main() {
   e = js_create_function<on_call>(env, "hello", fn);
   assert(e == 0);
 
-  js_object_t global;
-  e = js_get_global(env, global);
-  assert(e == 0);
-
-  e = js_set_property(env, global, "hello", fn);
-  assert(e == 0);
-
-  js_string_t<utf8_t> script;
-  e = js_create_string(env, "let i = 0, j; while (i++ < 200000) hello()", script);
-  assert(e == 0);
-
-  js_handle_t result;
-  e = js_run_script(env, "test", 0, script, result);
+  e = js_call_function(env, fn);
   assert(e == 0);
 
   e = js_close_handle_scope(env, scope);

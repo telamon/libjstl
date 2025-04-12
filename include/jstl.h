@@ -16,38 +16,25 @@ struct js_handle_t {
 
   js_handle_t(js_value_t *value) : value(value) {}
 
-  js_handle_t(js_handle_t &&) = default;
-
-  js_handle_t(const js_handle_t &) = delete;
-
   virtual ~js_handle_t() = default;
-
-  js_handle_t &
-  operator=(const js_handle_t &) = delete;
 };
 
 struct js_receiver_t : js_handle_t {
   js_receiver_t() : js_handle_t() {}
 
   js_receiver_t(js_value_t *value) : js_handle_t(value) {}
-
-  js_receiver_t(js_receiver_t &&) = default;
 };
 
 struct js_name_t : js_handle_t {
   js_name_t() : js_handle_t() {}
 
   js_name_t(js_value_t *value) : js_handle_t(value) {}
-
-  js_name_t(js_name_t &&) = default;
 };
 
 struct js_symbol_t : js_name_t {
   js_symbol_t() : js_name_t() {}
 
   js_symbol_t(js_value_t *value) : js_name_t(value) {}
-
-  js_symbol_t(js_symbol_t &&) = default;
 };
 
 template <typename T>
@@ -58,24 +45,18 @@ struct js_string_t : js_name_t {
   js_string_t() : js_name_t(), data(nullptr), len(0) {}
 
   js_string_t(js_value_t *value) : js_name_t(value), data(nullptr), len(0) {}
-
-  js_string_t(js_string_t &&) = default;
 };
 
 struct js_array_t : js_handle_t {
   js_array_t() : js_handle_t() {}
 
   js_array_t(js_value_t *value) : js_handle_t(value) {}
-
-  js_array_t(js_array_t &&) = default;
 };
 
 struct js_object_t : js_handle_t {
   js_object_t() : js_handle_t() {}
 
   js_object_t(js_value_t *value) : js_handle_t(value) {}
-
-  js_object_t(js_object_t &&) = default;
 };
 
 struct js_arraybuffer_t : js_handle_t {
@@ -85,8 +66,6 @@ struct js_arraybuffer_t : js_handle_t {
   js_arraybuffer_t() : js_handle_t(), data(nullptr), len(0) {}
 
   js_arraybuffer_t(js_value_t *value) : js_handle_t(value), data(nullptr), len(0) {}
-
-  js_arraybuffer_t(js_arraybuffer_t &&) = default;
 };
 
 template <typename T>
@@ -97,8 +76,6 @@ struct js_typedarray_t : js_handle_t {
   js_typedarray_t() : js_handle_t(), data(nullptr), len(0) {}
 
   js_typedarray_t(js_value_t *value) : js_handle_t(value), data(nullptr), len(0) {}
-
-  js_typedarray_t(js_typedarray_t &&) = default;
 };
 
 template <typename T>
@@ -124,8 +101,6 @@ struct js_function_t : js_handle_t {
   js_function_t() : js_handle_t() {}
 
   js_function_t(js_value_t *value) : js_handle_t(value) {}
-
-  js_function_t(js_function_t &&) = default;
 };
 
 template <typename T>
@@ -557,6 +532,90 @@ js_create_function(js_env_t *env, const std::string name, js_function_t<R, A...>
   return js_create_function<fn, R, A...>(env, name.data(), name.length(), result);
 }
 
+template <typename... A>
+constexpr auto
+js_call_function(js_env_t *env, const js_function_t<void, js_receiver_t, A...> &function, const js_receiver_t &receiver, const A &...args) {
+  int err;
+
+  js_callback_info_t *info;
+
+  size_t argc = sizeof...(A);
+
+  js_value_t *argv[] = {
+    js_type_container_t<A>::unmarshall(env, info, args...)...
+  };
+
+  return js_call_function(env, receiver.value, function.value, argc, argv, nullptr);
+}
+
+template <typename R, typename... A>
+constexpr auto
+js_call_function(js_env_t *env, const js_function_t<R, js_receiver_t, A...> &function, const js_receiver_t &receiver, const A &...args, R &result) {
+  int err;
+
+  js_callback_info_t *info;
+
+  size_t argc = sizeof...(A);
+
+  js_value_t *argv[] = {
+    js_type_container_t<A>::unmarshall(env, info, args...)...
+  };
+
+  js_value_t *value;
+  err = js_call_function(env, receiver, function.value, argc, argv, &value);
+  if (err < 0) return err;
+
+  result = js_type_container_t<R>::marshall(env, info, value);
+
+  return 0;
+}
+
+template <typename... A>
+constexpr auto
+js_call_function(js_env_t *env, const js_function_t<void, A...> &function, const A &...args) {
+  int err;
+
+  js_callback_info_t *info;
+
+  size_t argc = sizeof...(A);
+
+  js_value_t *argv[] = {
+    js_type_container_t<A>::marshall(env, info, args...)...
+  };
+
+  js_value_t *receiver;
+  err = js_get_global(env, &receiver);
+  assert(err == 0);
+
+  return js_call_function(env, receiver, function.value, argc, argv, nullptr);
+}
+
+template <typename R, typename... A>
+constexpr auto
+js_call_function(js_env_t *env, const js_function_t<R, A...> &function, const A &...args, R &result) {
+  int err;
+
+  js_callback_info_t *info;
+
+  size_t argc = sizeof...(A);
+
+  js_value_t *argv[] = {
+    js_type_container_t<A>::unmarshall(env, info, args...)...
+  };
+
+  js_value_t *receiver;
+  err = js_get_global(env, &receiver);
+  assert(err == 0);
+
+  js_value_t *value;
+  err = js_call_function(env, receiver, function.value, argc, argv, &value);
+  if (err < 0) return err;
+
+  result = js_type_container_t<R>::marshall(env, info, value);
+
+  return 0;
+}
+
 constexpr auto
 js_create_object(js_env_t *env, js_object_t &result) {
   return js_create_object(env, &result.value);
@@ -622,9 +681,31 @@ js_create_typedarray(js_env_t *env, size_t len, const js_arraybuffer_t &arraybuf
   return js_create_typedarray(env, len, arraybuffer, 0, result);
 }
 
+template <typename T>
+constexpr auto
+js_create_typedarray(js_env_t *env, size_t len, T *&data, js_typedarray_t<T> &result) {
+  int err;
+
+  js_arraybuffer_t arraybuffer;
+  err = js_create_arraybuffer(env, len, data, arraybuffer);
+  if (err < 0) return err;
+
+  return js_create_typedarray(env, len, arraybuffer, result);
+}
+
 constexpr auto
 js_get_global(js_env_t *env, js_object_t &result) {
   return js_get_global(env, &result.value);
+}
+
+constexpr auto
+js_get_property(js_env_t *env, const js_object_t &object, const js_name_t &name, js_handle_t &result) {
+  return js_get_property(env, object.value, name.value, &result.value);
+}
+
+constexpr auto
+js_get_property(js_env_t *env, const js_object_t &object, const char *name, js_handle_t &result) {
+  return js_get_named_property(env, object.value, name, &result.value);
 }
 
 constexpr auto
@@ -647,6 +728,12 @@ template <typename T>
 constexpr auto
 js_run_script(js_env_t *env, std::string file, int offset, const js_string_t<T> &source, js_handle_t &result) {
   return js_run_script(env, file.data(), file.length(), offset, source.value, &result.value);
+}
+
+template <typename T>
+constexpr auto
+js_run_script(js_env_t *env, const js_string_t<T> &source, js_handle_t &result) {
+  return js_run_script(env, nullptr, 0, 0, source.value, &result.value);
 }
 
 } // namespace
