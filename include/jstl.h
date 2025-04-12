@@ -20,18 +20,36 @@ struct js_handle_t {
 
   js_handle_t(js_handle_t &&) = default;
 
+  virtual ~js_handle_t() = default;
+
   js_handle_t &
   operator=(const js_handle_t &) = delete;
 };
 
 struct js_receiver_t : js_handle_t {
+  js_receiver_t() : js_handle_t() {}
+
   js_receiver_t(js_value_t *value) : js_handle_t(value) {}
+
+  js_receiver_t(js_receiver_t &&) = default;
 };
 
 template <typename T>
-struct js_string_t : js_handle_t {};
+struct js_string_t : js_handle_t {
+  js_string_t() : js_handle_t() {}
 
-struct js_object_t : js_handle_t {};
+  js_string_t(js_value_t *value) : js_handle_t(value) {}
+
+  js_string_t(js_string_t &&) = default;
+};
+
+struct js_object_t : js_handle_t {
+  js_object_t() : js_handle_t() {}
+
+  js_object_t(js_value_t *value) : js_handle_t(value) {}
+
+  js_object_t(js_object_t &&) = default;
+};
 
 struct js_arraybuffer_t : js_handle_t {
   uint8_t *data;
@@ -65,8 +83,7 @@ struct js_typedarray_with_view_t : js_typedarray_t<T> {
 
   js_typedarray_with_view_t(js_env_t *env, js_value_t *value) : js_typedarray_t<T>(value), env(env), view(nullptr) {}
 
-  js_typedarray_with_view_t(js_typedarray_with_view_t &&that)
-      : view(std::exchange(that.view, nullptr)) {}
+  js_typedarray_with_view_t(js_typedarray_with_view_t &&that) : view(std::exchange(that.view, nullptr)) {}
 
   ~js_typedarray_with_view_t() {
     if (view == nullptr) return;
@@ -78,7 +95,13 @@ struct js_typedarray_with_view_t : js_typedarray_t<T> {
 };
 
 template <typename R, typename... A>
-struct js_function_t : js_handle_t {};
+struct js_function_t : js_handle_t {
+  js_function_t() : js_handle_t() {}
+
+  js_function_t(js_value_t *value) : js_handle_t(value) {}
+
+  js_function_t(js_function_t &&) = default;
+};
 
 template <typename T>
 struct js_type_container_t;
@@ -484,7 +507,7 @@ js_untyped_callback() {
 
 template <auto fn, typename R, typename... A>
 constexpr auto
-js_create_typed_function(js_env_t *env, const char *name, size_t len, js_function_t<R, A...> &result) {
+js_create_function(js_env_t *env, const char *name, size_t len, js_function_t<R, A...> &result) {
   auto typed = js_typed_callback<fn, R, A...>();
 
   auto untyped = js_untyped_callback<fn, R, A...>();
@@ -505,8 +528,8 @@ js_create_typed_function(js_env_t *env, const char *name, size_t len, js_functio
 
 template <auto fn, typename R, typename... A>
 constexpr auto
-js_create_typed_function(js_env_t *env, const std::string name, js_function_t<R, A...> &result) {
-  return js_create_typed_function<fn, R, A...>(env, name.data(), name.length(), result);
+js_create_function(js_env_t *env, const std::string name, js_function_t<R, A...> &result) {
+  return js_create_function<fn, R, A...>(env, name.data(), name.length(), result);
 }
 
 constexpr auto

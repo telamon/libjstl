@@ -52,7 +52,7 @@ main() {
   assert(e == 0);
 
   js_function_t<js_typedarray_t<uint8_t>> fn;
-  e = js_create_typed_function<on_call>(env, "hello", fn);
+  e = js_create_function<on_call>(env, "hello", fn);
   assert(e == 0);
 
   js_object_t global;
