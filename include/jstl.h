@@ -572,14 +572,16 @@ js_create_string(js_env_t *env, const std::string str, js_string_t<utf8_t> &resu
   return js_create_string_utf8(env, (const utf8_t *) str.data(), str.length(), &result.value);
 }
 
+template <typename T>
 constexpr auto
-js_create_arraybuffer(js_env_t *env, size_t len, void *&data, js_arraybuffer_t &result) {
-  return js_create_arraybuffer(env, len, &data, &result.value);
+js_create_arraybuffer(js_env_t *env, size_t len, T *&data, js_arraybuffer_t &result) {
+  return js_create_arraybuffer(env, len * sizeof(T), (void **) &data, &result.value);
 }
 
+template <typename T>
 constexpr auto
-js_create_arraybuffer(js_env_t *env, size_t len, uint8_t *&data, js_arraybuffer_t &result) {
-  return js_create_arraybuffer(env, len, (void **) &data, &result.value);
+js_create_arraybuffer(js_env_t *env, T *&data, js_arraybuffer_t &result) {
+  return js_create_arraybuffer(env, sizeof(T), (void **) &data, &result.value);
 }
 
 template <typename T>
