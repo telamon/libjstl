@@ -62,6 +62,14 @@ struct js_string_t : js_name_t {
   js_string_t(js_string_t &&) = default;
 };
 
+struct js_array_t : js_handle_t {
+  js_array_t() : js_handle_t() {}
+
+  js_array_t(js_value_t *value) : js_handle_t(value) {}
+
+  js_array_t(js_array_t &&) = default;
+};
+
 struct js_object_t : js_handle_t {
   js_object_t() : js_handle_t() {}
 
