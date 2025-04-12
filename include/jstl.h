@@ -16,9 +16,9 @@ struct js_handle_t {
 
   js_handle_t(js_value_t *value) : value(value) {}
 
-  js_handle_t(const js_handle_t &) = delete;
-
   js_handle_t(js_handle_t &&) = default;
+
+  js_handle_t(const js_handle_t &) = delete;
 
   virtual ~js_handle_t() = default;
 
@@ -34,11 +34,30 @@ struct js_receiver_t : js_handle_t {
   js_receiver_t(js_receiver_t &&) = default;
 };
 
-template <typename T>
-struct js_string_t : js_handle_t {
-  js_string_t() : js_handle_t() {}
+struct js_name_t : js_handle_t {
+  js_name_t() : js_handle_t() {}
 
-  js_string_t(js_value_t *value) : js_handle_t(value) {}
+  js_name_t(js_value_t *value) : js_handle_t(value) {}
+
+  js_name_t(js_name_t &&) = default;
+};
+
+struct js_symbol_t : js_name_t {
+  js_symbol_t() : js_name_t() {}
+
+  js_symbol_t(js_value_t *value) : js_name_t(value) {}
+
+  js_symbol_t(js_symbol_t &&) = default;
+};
+
+template <typename T>
+struct js_string_t : js_name_t {
+  T *data;
+  size_t len;
+
+  js_string_t() : js_name_t(), data(nullptr), len(0) {}
+
+  js_string_t(js_value_t *value) : js_name_t(value), data(nullptr), len(0) {}
 
   js_string_t(js_string_t &&) = default;
 };
@@ -55,9 +74,9 @@ struct js_arraybuffer_t : js_handle_t {
   uint8_t *data;
   size_t len;
 
-  js_arraybuffer_t() : js_handle_t() {}
+  js_arraybuffer_t() : js_handle_t(), data(nullptr), len(0) {}
 
-  js_arraybuffer_t(js_value_t *value) : js_handle_t(value) {}
+  js_arraybuffer_t(js_value_t *value) : js_handle_t(value), data(nullptr), len(0) {}
 
   js_arraybuffer_t(js_arraybuffer_t &&) = default;
 };
@@ -67,13 +86,11 @@ struct js_typedarray_t : js_handle_t {
   T *data;
   size_t len;
 
-  js_typedarray_t() : js_handle_t() {}
+  js_typedarray_t() : js_handle_t(), data(nullptr), len(0) {}
 
-  js_typedarray_t(js_value_t *value) : js_handle_t(value) {}
+  js_typedarray_t(js_value_t *value) : js_handle_t(value), data(nullptr), len(0) {}
 
   js_typedarray_t(js_typedarray_t &&) = default;
-
-  virtual ~js_typedarray_t() = default;
 };
 
 template <typename T>
@@ -161,7 +178,7 @@ struct js_type_container_t<bool> {
     return value;
   }
 
-  static auto
+  static constexpr auto
   marshall(js_env_t *env, js_callback_info_t *, bool value) {
     int err;
 
@@ -177,7 +194,7 @@ struct js_type_container_t<bool> {
     return value;
   }
 
-  static auto
+  static constexpr auto
   unmarshall(js_env_t *env, js_callback_info_t *, js_value_t *value) {
     int err;
 
@@ -203,7 +220,7 @@ struct js_type_container_t<int32_t> {
     return value;
   }
 
-  static auto
+  static constexpr auto
   marshall(js_env_t *env, js_callback_info_t *, int32_t value) {
     int err;
 
@@ -219,7 +236,7 @@ struct js_type_container_t<int32_t> {
     return value;
   }
 
-  static auto
+  static constexpr auto
   unmarshall(js_env_t *env, js_callback_info_t *, js_value_t *value) {
     int err;
 
@@ -245,7 +262,7 @@ struct js_type_container_t<uint32_t> {
     return value;
   }
 
-  static auto
+  static constexpr auto
   marshall(js_env_t *env, js_callback_info_t *, uint32_t value) {
     int err;
 
@@ -261,7 +278,7 @@ struct js_type_container_t<uint32_t> {
     return value;
   }
 
-  static auto
+  static constexpr auto
   unmarshall(js_env_t *env, js_callback_info_t *, js_value_t *value) {
     int err;
 
@@ -287,7 +304,7 @@ struct js_type_container_t<int64_t> {
     return value;
   }
 
-  static auto
+  static constexpr auto
   marshall(js_env_t *env, js_callback_info_t *, int64_t value) {
     int err;
 
@@ -303,7 +320,7 @@ struct js_type_container_t<int64_t> {
     return value;
   }
 
-  static auto
+  static constexpr auto
   unmarshall(js_env_t *env, js_callback_info_t *, js_value_t *value) {
     int err;
 
@@ -329,7 +346,7 @@ struct js_type_container_t<double> {
     return value;
   }
 
-  static auto
+  static constexpr auto
   marshall(js_env_t *env, js_callback_info_t *, double value) {
     int err;
 
@@ -345,7 +362,7 @@ struct js_type_container_t<double> {
     return value;
   }
 
-  static auto
+  static constexpr auto
   unmarshall(js_env_t *env, js_callback_info_t *, js_value_t *value) {
     int err;
 
@@ -366,12 +383,12 @@ struct js_type_container_t<js_arraybuffer_t> {
     return js_object;
   }
 
-  static auto
+  static constexpr auto
   marshall(js_env_t *env, js_typed_callback_info_t *, const js_arraybuffer_t &arraybuffer) {
     return arraybuffer.value;
   }
 
-  static auto
+  static constexpr auto
   marshall(js_env_t *env, js_callback_info_t *, const js_arraybuffer_t &arraybuffer) {
     return arraybuffer.value;
   }
@@ -407,17 +424,17 @@ struct js_type_container_t<js_typedarray_t<T>> {
     return js_object;
   }
 
-  static auto
+  static constexpr auto
   marshall(js_env_t *env, js_typed_callback_info_t *, const js_typedarray_t<T> &typedarray) {
     return typedarray.value;
   }
 
-  static auto
+  static constexpr auto
   marshall(js_env_t *env, js_callback_info_t *, const js_typedarray_t<T> &typedarray) {
     return typedarray.value;
   }
 
-  static auto
+  static constexpr auto
   unmarshall(js_env_t *env, js_typed_callback_info_t *info, js_value_t *value) {
     int err;
 
@@ -428,7 +445,7 @@ struct js_type_container_t<js_typedarray_t<T>> {
     return result;
   }
 
-  static auto
+  static constexpr auto
   unmarshall(js_env_t *env, js_callback_info_t *info, js_value_t *value) {
     int err;
 
@@ -475,12 +492,12 @@ js_untyped_callback(std::index_sequence<I...>) {
       if constexpr (std::is_same<head, js_receiver_t>()) {
         argc--;
 
-        err = js_get_callback_info(env, info, &argc, &argv[1], &argv[0], NULL);
+        err = js_get_callback_info(env, info, &argc, &argv[1], &argv[0], nullptr);
         assert(err == 0);
 
         argc++;
       } else {
-        err = js_get_callback_info(env, info, &argc, argv, NULL, NULL);
+        err = js_get_callback_info(env, info, &argc, argv, nullptr, nullptr);
         assert(err == 0);
       }
 
@@ -592,6 +609,11 @@ js_create_typedarray(js_env_t *env, size_t len, const js_arraybuffer_t &arraybuf
 constexpr auto
 js_get_global(js_env_t *env, js_object_t &result) {
   return js_get_global(env, &result.value);
+}
+
+constexpr auto
+js_set_property(js_env_t *env, const js_object_t &object, const js_name_t &name, const js_handle_t &value) {
+  return js_set_property(env, object.value, name.value, value.value);
 }
 
 constexpr auto
