@@ -55,6 +55,19 @@ main() {
   e = js_call_function(env, fn, result);
   assert(e == 0);
 
+  uint8_t *data;
+  size_t len;
+  e = js_get_typedarray_info(env, result, data, len);
+  assert(e == 0);
+
+  assert(len == 5);
+
+  assert(data[0] == 'h');
+  assert(data[1] == 'e');
+  assert(data[2] == 'l');
+  assert(data[3] == 'l');
+  assert(data[4] == 'o');
+
   e = js_close_handle_scope(env, scope);
   assert(e == 0);
 

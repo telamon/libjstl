@@ -60,83 +60,23 @@ struct js_arraybuffer_t : js_handle_t {
   js_arraybuffer_t() : js_handle_t() {}
 
   js_arraybuffer_t(js_value_t *value) : js_handle_t(value) {}
-
-  template <typename T>
-  constexpr auto
-  info(js_env_t *env, T *&data, size_t &len) {
-    if (this->data == nullptr) {
-      auto err = info(env);
-      if (err < 0) return err;
-    }
-
-    data = (T *) this->data;
-    len = this->len / sizeof(T);
-
-    return 0;
-  }
-
-protected:
-  void *data = nullptr;
-  size_t len = 0;
-
-  constexpr int
-  info(js_env_t *env) {
-    return js_get_arraybuffer_info(env, value, &data, &len);
-  }
 };
 
 template <typename T>
 struct js_typedarray_t : js_handle_t {
-  js_typedarray_t() : js_handle_t() {}
+  js_env_t *env;
+  js_typedarray_view_t *view;
 
-  js_typedarray_t(js_value_t *value) : js_handle_t(value) {}
+  js_typedarray_t() : js_handle_t(), env(nullptr), view(nullptr) {}
 
-  constexpr auto
-  info(js_env_t *env, T *&data, size_t &len) {
-    if (this->data == nullptr) {
-      auto err = info(env);
-      if (err < 0) return err;
-    }
+  js_typedarray_t(js_env_t *env, js_value_t *value) : js_handle_t(value), env(env), view(nullptr) {}
 
-    data = (T *) this->data;
-    len = this->len;
-
-    return 0;
-  }
-
-protected:
-  void *data = nullptr;
-  size_t len = 0;
-
-  virtual constexpr int
-  info(js_env_t *env) {
-    return js_get_typedarray_info(env, value, nullptr, &data, &len, nullptr, nullptr);
-  }
-};
-
-template <typename T>
-struct js_typedarray_with_view_t : js_typedarray_t<T> {
-  js_typedarray_with_view_t(js_value_t *value) : js_typedarray_t<T>(value) {}
-
-  js_typedarray_with_view_t(js_typedarray_with_view_t &&that) : view(std::exchange(that.view, nullptr)) {}
-
-  ~js_typedarray_with_view_t() {
+  ~js_typedarray_t() {
     if (view == nullptr) return;
 
     int err;
     err = js_release_typedarray_view(env, view);
     assert(err == 0);
-  }
-
-protected:
-  js_env_t *env = nullptr;
-  js_typedarray_view_t *view = nullptr;
-
-  constexpr int
-  info(js_env_t *env) {
-    this->env = env;
-
-    return js_get_typedarray_view(env, this->value, nullptr, &this->data, &this->len, &view);
   }
 };
 
@@ -440,24 +380,24 @@ struct js_type_container_t<js_typedarray_t<T>> {
     return js_object;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *env, js_typed_callback_info_t *, const js_typedarray_t<T> &typedarray) {
     return typedarray.value;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *env, js_callback_info_t *, const js_typedarray_t<T> &typedarray) {
     return typedarray.value;
   }
 
   static auto
   unmarshall(js_env_t *env, js_typed_callback_info_t *, js_value_t *value) {
-    return js_typedarray_with_view_t<T>(value);
+    return js_typedarray_t<T>(env, value);
   }
 
   static auto
   unmarshall(js_env_t *env, js_callback_info_t *info, js_value_t *value) {
-    return js_typedarray_t<T>(value);
+    return js_typedarray_t<T>(env, value);
   }
 };
 
@@ -563,7 +503,7 @@ js_call_function(js_env_t *env, const js_function_t<void, js_receiver_t, A...> &
   size_t argc = sizeof...(A);
 
   js_value_t *argv[] = {
-    js_type_container_t<A>::unmarshall(env, info, args...)...
+    js_type_container_t<A>::marshall(env, info, args...)...
   };
 
   return js_call_function(env, receiver.value, function.value, argc, argv, nullptr);
@@ -579,14 +519,14 @@ js_call_function(js_env_t *env, const js_function_t<R, js_receiver_t, A...> &fun
   size_t argc = sizeof...(A);
 
   js_value_t *argv[] = {
-    js_type_container_t<A>::unmarshall(env, info, args...)...
+    js_type_container_t<A>::marshall(env, info, args...)...
   };
 
   js_value_t *value;
   err = js_call_function(env, receiver, function.value, argc, argv, &value);
   if (err < 0) return err;
 
-  result = js_type_container_t<R>::marshall(env, info, value);
+  result = js_type_container_t<R>::unmarshall(env, info, value);
 
   return 0;
 }
@@ -621,7 +561,7 @@ js_call_function(js_env_t *env, const js_function_t<R, A...> &function, const A 
   size_t argc = sizeof...(A);
 
   js_value_t *argv[] = {
-    js_type_container_t<A>::unmarshall(env, info, args...)...
+    js_type_container_t<A>::marshall(env, info, args...)...
   };
 
   js_value_t *receiver;
@@ -632,7 +572,7 @@ js_call_function(js_env_t *env, const js_function_t<R, A...> &function, const A 
   err = js_call_function(env, receiver, function.value, argc, argv, &value);
   if (err < 0) return err;
 
-  result = js_type_container_t<R>::marshall(env, info, value);
+  result = js_type_container_t<R>::unmarshall(env, info, value);
 
   return 0;
 }
@@ -717,13 +657,26 @@ js_create_typedarray(js_env_t *env, size_t len, T *&data, js_typedarray_t<T> &re
 template <typename T>
 constexpr auto
 js_get_arraybuffer_info(js_env_t *env, const js_arraybuffer_t &arraybuffer, T *&data, size_t &len) {
-  return arraybuffer.info(env, data, len);
+  int err;
+  err = js_get_arraybuffer_info(env, arraybuffer.value, (void **) &data, &len);
+  if (err < 0) return err;
+
+  len /= sizeof(T);
+
+  return 0;
 }
 
 template <typename T>
 constexpr auto
-js_get_typedarray_info(js_env_t *env, const js_typedarray_t<T> &typedarray, T *&data, size_t &len) {
-  return typedarray.info(env, data, len);
+js_get_typedarray_info(js_env_t *env, js_typedarray_t<T> &typedarray, T *&data, size_t &len) {
+  int err;
+
+  if (typedarray.view) {
+    err = js_release_typedarray_view(env, typedarray.view);
+    if (err < 0) return err;
+  }
+
+  return js_get_typedarray_view(env, typedarray.value, nullptr, (void **) &data, &len, &typedarray.view);
 }
 
 constexpr auto

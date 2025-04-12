@@ -7,7 +7,22 @@
 #include "../include/jstl.h"
 
 void
-on_call(js_env_t *, js_typedarray_t<uint8_t>) {}
+on_call(js_env_t *env, js_typedarray_t<uint8_t> typedarray) {
+  int e;
+
+  uint8_t *data;
+  size_t len;
+  e = js_get_typedarray_info(env, typedarray, data, len);
+  assert(e == 0);
+
+  assert(len == 5);
+
+  assert(data[0] == 'h');
+  assert(data[1] == 'e');
+  assert(data[2] == 'l');
+  assert(data[3] == 'l');
+  assert(data[4] == 'o');
+}
 
 int
 main() {
@@ -40,6 +55,12 @@ main() {
   js_typedarray_t<uint8_t> arg;
   e = js_create_typedarray(env, 5, data, arg);
   assert(e == 0);
+
+  data[0] = 'h';
+  data[1] = 'e';
+  data[2] = 'l';
+  data[3] = 'l';
+  data[4] = 'o';
 
   e = js_call_function(env, fn, arg);
   assert(e == 0);
