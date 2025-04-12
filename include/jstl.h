@@ -616,6 +616,12 @@ js_create_typedarray(js_env_t *env, size_t len, const js_arraybuffer_t &arraybuf
   return js_create_typedarray(env, type, len, arraybuffer.value, offset, &result.value);
 }
 
+template <typename T>
+constexpr auto
+js_create_typedarray(js_env_t *env, size_t len, const js_arraybuffer_t &arraybuffer, js_typedarray_t<T> &result) {
+  return js_create_typedarray(env, len, arraybuffer, 0, result);
+}
+
 constexpr auto
 js_get_global(js_env_t *env, js_object_t &result) {
   return js_get_global(env, &result.value);

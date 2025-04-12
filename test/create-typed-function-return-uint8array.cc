@@ -23,7 +23,7 @@ on_call(js_env_t *env) {
   data[4] = 'o';
 
   js_typedarray_t<uint8_t> typedarray;
-  e = js_create_typedarray(env, 5, arraybuffer, 0, typedarray);
+  e = js_create_typedarray(env, 5, arraybuffer, typedarray);
   assert(e == 0);
 
   return typedarray;
