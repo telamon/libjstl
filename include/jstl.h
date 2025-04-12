@@ -717,13 +717,13 @@ js_create_typedarray(js_env_t *env, size_t len, T *&data, js_typedarray_t<T> &re
 template <typename T>
 constexpr auto
 js_get_arraybuffer_info(js_env_t *env, const js_arraybuffer_t &arraybuffer, T *&data, size_t &len) {
-  return arraybuffer.info(data, len);
+  return arraybuffer.info(env, data, len);
 }
 
 template <typename T>
 constexpr auto
 js_get_typedarray_info(js_env_t *env, const js_typedarray_t<T> &typedarray, T *&data, size_t &len) {
-  return typedarray.info(data, len);
+  return typedarray.info(env, data, len);
 }
 
 constexpr auto
