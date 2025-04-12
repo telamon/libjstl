@@ -420,12 +420,12 @@ struct js_type_container_t<js_arraybuffer_t> {
     return arraybuffer.value;
   }
 
-  static constexpr auto
+  static auto
   unmarshall(js_env_t *env, js_typed_callback_info_t *, js_value_t *value) {
     return js_arraybuffer_t(value);
   }
 
-  static constexpr auto
+  static auto
   unmarshall(js_env_t *env, js_callback_info_t *, js_value_t *value) {
     return js_arraybuffer_t(value);
   }
@@ -450,12 +450,12 @@ struct js_type_container_t<js_typedarray_t<T>> {
     return typedarray.value;
   }
 
-  static constexpr auto
+  static auto
   unmarshall(js_env_t *env, js_typed_callback_info_t *, js_value_t *value) {
     return js_typedarray_with_view_t<T>(value);
   }
 
-  static constexpr auto
+  static auto
   unmarshall(js_env_t *env, js_callback_info_t *info, js_value_t *value) {
     return js_typedarray_t<T>(value);
   }
