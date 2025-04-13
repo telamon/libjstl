@@ -1,10 +1,17 @@
 fetch_package("github:holepunchto/libjs")
 
 list(APPEND tests
-  create-typed-function-return-string
-  create-typed-function-return-uint8array
-  create-typed-function-return-void
-  create-typed-function-return-void-arg-uint8array
+  create-function-receiver
+  create-function-return-int32
+  create-function-return-int64
+  create-function-return-string
+  create-function-return-uint8array
+  create-function-return-uint32
+  create-function-return-void
+  create-function-return-void-arg-int32
+  create-function-return-void-arg-int64
+  create-function-return-void-arg-uint8array
+  create-function-return-void-arg-uint32
 )
 
 foreach(test IN LISTS tests)

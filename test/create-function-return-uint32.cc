@@ -1,28 +1,13 @@
 #include <assert.h>
 #include <js.h>
 #include <stdint.h>
-#include <utf.h>
 #include <uv.h>
 
 #include "../include/jstl.h"
 
-js_typedarray_t<uint8_t>
+uint32_t
 on_call(js_env_t *env) {
-  int e;
-
-  uint8_t *data;
-
-  js_typedarray_t<uint8_t> typedarray;
-  e = js_create_typedarray(env, 5, data, typedarray);
-  assert(e == 0);
-
-  data[0] = 'h';
-  data[1] = 'e';
-  data[2] = 'l';
-  data[3] = 'l';
-  data[4] = 'o';
-
-  return typedarray;
+  return 42;
 }
 
 int
@@ -31,12 +16,8 @@ main() {
 
   uv_loop_t *loop = uv_default_loop();
 
-  js_platform_options_t options = {
-    .trace_optimizations = true,
-  };
-
   js_platform_t *platform;
-  e = js_create_platform(loop, &options, &platform);
+  e = js_create_platform(loop, NULL, &platform);
   assert(e == 0);
 
   js_env_t *env;
@@ -47,26 +28,15 @@ main() {
   e = js_open_handle_scope(env, &scope);
   assert(e == 0);
 
-  js_function_t<js_typedarray_t<uint8_t>> fn;
+  js_function_t<uint32_t> fn;
   e = js_create_function<on_call>(env, fn);
   assert(e == 0);
 
-  js_typedarray_t<uint8_t> result;
+  uint32_t result;
   e = js_call_function(env, fn, result);
   assert(e == 0);
 
-  uint8_t *data;
-  size_t len;
-  e = js_get_typedarray_info(env, result, data, len);
-  assert(e == 0);
-
-  assert(len == 5);
-
-  assert(data[0] == 'h');
-  assert(data[1] == 'e');
-  assert(data[2] == 'l');
-  assert(data[3] == 'l');
-  assert(data[4] == 'o');
+  assert(result == 42);
 
   e = js_close_handle_scope(env, scope);
   assert(e == 0);

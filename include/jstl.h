@@ -159,6 +159,13 @@ struct js_type_info_t<js_receiver_t> {
     return js_object;
   }
 
+  static constexpr auto
+  marshall(js_env_t *, const js_receiver_t &receiver, js_value_t *&result) {
+    result = receiver.value;
+
+    return 0;
+  }
+
   static auto
   unmarshall(js_env_t *, js_value_t *value, js_receiver_t &result) {
     result = js_receiver_t(value);
@@ -568,40 +575,6 @@ js_create_function(js_env_t *env, js_function_t<R, A...> &result) {
 
 template <typename... A>
 constexpr auto
-js_call_function(js_env_t *env, const js_function_t<void, js_receiver_t, A...> &function, const js_receiver_t &receiver, const A &...args) {
-  int err;
-
-  size_t argc = sizeof...(A);
-
-  js_value_t *argv[] = {
-    js_marshall_untyped_value<A>(env, args...)...
-  };
-
-  return js_call_function(env, receiver.value, function.value, argc, argv, nullptr);
-}
-
-template <typename R, typename... A>
-constexpr auto
-js_call_function(js_env_t *env, const js_function_t<R, js_receiver_t, A...> &function, const js_receiver_t &receiver, const A &...args, R &result) {
-  int err;
-
-  size_t argc = sizeof...(A);
-
-  js_value_t *argv[] = {
-    js_marshall_untyped_value<A>(env, args...)...
-  };
-
-  js_value_t *value;
-  err = js_call_function(env, receiver, function.value, argc, argv, &value);
-  if (err < 0) return err;
-
-  result = js_unmarshall_untyped_value<R>(env, value);
-
-  return 0;
-}
-
-template <typename... A>
-constexpr auto
 js_call_function(js_env_t *env, const js_function_t<void, A...> &function, const A &...args) {
   int err;
 
@@ -612,10 +585,25 @@ js_call_function(js_env_t *env, const js_function_t<void, A...> &function, const
   };
 
   js_value_t *receiver;
-  err = js_get_global(env, &receiver);
-  assert(err == 0);
 
-  return js_call_function(env, receiver, function.value, argc, argv, nullptr);
+  size_t offset = 0;
+
+  if constexpr (std::tuple_size<std::tuple<A...>>() > 0) {
+    using head = std::tuple_element<0, std::tuple<A...>>::type;
+
+    if constexpr (std::is_same<head, js_receiver_t>()) {
+      receiver = argv[0];
+      offset = 1;
+    } else {
+      err = js_get_global(env, &receiver);
+      assert(err == 0);
+    }
+  } else {
+    err = js_get_global(env, &receiver);
+    assert(err == 0);
+  }
+
+  return js_call_function(env, receiver, function.value, argc - offset, &argv[offset], nullptr);
 }
 
 template <typename R, typename... A>
@@ -630,11 +618,26 @@ js_call_function(js_env_t *env, const js_function_t<R, A...> &function, const A 
   };
 
   js_value_t *receiver;
-  err = js_get_global(env, &receiver);
-  assert(err == 0);
+
+  size_t offset = 0;
+
+  if constexpr (std::tuple_size<std::tuple<A...>>() > 0) {
+    using head = std::tuple_element<0, std::tuple<A...>>::type;
+
+    if constexpr (std::is_same<head, js_receiver_t>()) {
+      receiver = argv[0];
+      offset = 1;
+    } else {
+      err = js_get_global(env, &receiver);
+      assert(err == 0);
+    }
+  } else {
+    err = js_get_global(env, &receiver);
+    assert(err == 0);
+  }
 
   js_value_t *value;
-  err = js_call_function(env, receiver, function.value, argc, argv, &value);
+  err = js_call_function(env, receiver, function.value, argc - offset, &argv[offset], &value);
   if (err < 0) return err;
 
   result = js_unmarshall_untyped_value<R>(env, value);

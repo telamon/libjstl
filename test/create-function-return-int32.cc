@@ -1,13 +1,14 @@
 #include <assert.h>
 #include <js.h>
 #include <stdint.h>
-#include <utf.h>
 #include <uv.h>
 
 #include "../include/jstl.h"
 
-void
-on_call(js_env_t *) {}
+int32_t
+on_call(js_env_t *env) {
+  return -42;
+}
 
 int
 main() {
@@ -15,12 +16,8 @@ main() {
 
   uv_loop_t *loop = uv_default_loop();
 
-  js_platform_options_t options = {
-    .trace_optimizations = true,
-  };
-
   js_platform_t *platform;
-  e = js_create_platform(loop, &options, &platform);
+  e = js_create_platform(loop, NULL, &platform);
   assert(e == 0);
 
   js_env_t *env;
@@ -31,12 +28,15 @@ main() {
   e = js_open_handle_scope(env, &scope);
   assert(e == 0);
 
-  js_function_t<void> fn;
+  js_function_t<int32_t> fn;
   e = js_create_function<on_call>(env, fn);
   assert(e == 0);
 
-  e = js_call_function(env, fn);
+  int32_t result;
+  e = js_call_function(env, fn, result);
   assert(e == 0);
+
+  assert(result == -42);
 
   e = js_close_handle_scope(env, scope);
   assert(e == 0);
