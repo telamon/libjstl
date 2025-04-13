@@ -16,6 +16,10 @@ struct js_handle_t {
   js_handle_t(js_value_t *value) : value(value) {}
 
   virtual ~js_handle_t() = default;
+
+  operator js_value_t *() const {
+    return value;
+  }
 };
 
 struct js_primitive_t : js_handle_t {
@@ -61,31 +65,31 @@ struct js_string_t : js_name_t {
   js_string_t(js_value_t *value) : js_name_t(value) {}
 };
 
-struct js_array_t : js_handle_t {
-  js_array_t() : js_handle_t() {}
-
-  js_array_t(js_value_t *value) : js_handle_t(value) {}
-};
-
 struct js_object_t : js_handle_t {
   js_object_t() : js_handle_t() {}
 
   js_object_t(js_value_t *value) : js_handle_t(value) {}
 };
 
-struct js_arraybuffer_t : js_handle_t {
-  js_arraybuffer_t() : js_handle_t() {}
+struct js_array_t : js_object_t {
+  js_array_t() : js_object_t() {}
 
-  js_arraybuffer_t(js_value_t *value) : js_handle_t(value) {}
+  js_array_t(js_value_t *value) : js_object_t(value) {}
+};
+
+struct js_arraybuffer_t : js_object_t {
+  js_arraybuffer_t() : js_object_t() {}
+
+  js_arraybuffer_t(js_value_t *value) : js_object_t(value) {}
 };
 
 template <typename T>
-struct js_typedarray_t : js_handle_t {
+struct js_typedarray_t : js_object_t {
   js_typedarray_view_t *view;
 
-  js_typedarray_t() : js_handle_t(), view(nullptr) {}
+  js_typedarray_t() : js_object_t(), view(nullptr) {}
 
-  js_typedarray_t(js_value_t *value) : js_handle_t(value), view(nullptr) {}
+  js_typedarray_t(js_value_t *value) : js_object_t(value), view(nullptr) {}
 
   ~js_typedarray_t() {
     if (view == nullptr) return;
@@ -97,10 +101,10 @@ struct js_typedarray_t : js_handle_t {
 };
 
 template <typename R, typename... A>
-struct js_function_t : js_handle_t {
-  js_function_t() : js_handle_t() {}
+struct js_function_t : js_object_t {
+  js_function_t() : js_object_t() {}
 
-  js_function_t(js_value_t *value) : js_handle_t(value) {}
+  js_function_t(js_value_t *value) : js_object_t(value) {}
 };
 
 struct js_receiver_t : js_handle_t {
@@ -110,10 +114,10 @@ struct js_receiver_t : js_handle_t {
 };
 
 template <typename T>
-struct js_type_container_t;
+struct js_type_info_t;
 
 template <>
-struct js_type_container_t<void> {
+struct js_type_info_t<void> {
   using type = void;
 
   static constexpr auto
@@ -128,7 +132,7 @@ struct js_type_container_t<void> {
 };
 
 template <>
-struct js_type_container_t<js_receiver_t> {
+struct js_type_info_t<js_receiver_t> {
   using type = js_value_t *;
 
   static constexpr auto
@@ -145,7 +149,7 @@ struct js_type_container_t<js_receiver_t> {
 };
 
 template <>
-struct js_type_container_t<bool> {
+struct js_type_info_t<bool> {
   using type = bool;
 
   static constexpr auto
@@ -179,7 +183,7 @@ struct js_type_container_t<bool> {
 };
 
 template <>
-struct js_type_container_t<int32_t> {
+struct js_type_info_t<int32_t> {
   using type = int32_t;
 
   static constexpr auto
@@ -213,7 +217,7 @@ struct js_type_container_t<int32_t> {
 };
 
 template <>
-struct js_type_container_t<uint32_t> {
+struct js_type_info_t<uint32_t> {
   using type = uint32_t;
 
   static constexpr auto
@@ -247,7 +251,7 @@ struct js_type_container_t<uint32_t> {
 };
 
 template <>
-struct js_type_container_t<int64_t> {
+struct js_type_info_t<int64_t> {
   using type = int64_t;
 
   static constexpr auto
@@ -281,7 +285,7 @@ struct js_type_container_t<int64_t> {
 };
 
 template <>
-struct js_type_container_t<double> {
+struct js_type_info_t<double> {
   using type = double;
 
   static constexpr auto
@@ -315,7 +319,7 @@ struct js_type_container_t<double> {
 };
 
 template <>
-struct js_type_container_t<js_arraybuffer_t> {
+struct js_type_info_t<js_arraybuffer_t> {
   using type = js_value_t *;
 
   static constexpr auto
@@ -339,7 +343,7 @@ struct js_type_container_t<js_arraybuffer_t> {
 };
 
 template <typename T>
-struct js_type_container_t<js_typedarray_t<T>> {
+struct js_type_info_t<js_typedarray_t<T>> {
   using type = js_value_t *;
 
   static constexpr auto
@@ -367,8 +371,8 @@ constexpr auto
 js_marshall_typed_value(js_env_t *env, T value) {
   int err;
 
-  typename js_type_container_t<T>::type result;
-  err = js_type_container_t<T>::marshall(env, value, result);
+  typename js_type_info_t<T>::type result;
+  err = js_type_info_t<T>::marshall(env, value, result);
   assert(err == 0);
 
   return result;
@@ -380,7 +384,7 @@ js_marshall_untyped_value(js_env_t *env, T value) {
   int err;
 
   js_value_t *result;
-  err = js_type_container_t<T>::marshall(env, value, result);
+  err = js_type_info_t<T>::marshall(env, value, result);
   assert(err == 0);
 
   return result;
@@ -391,7 +395,7 @@ js_marshall_untyped_value(js_env_t *env) {
   int err;
 
   js_value_t *result;
-  err = js_type_container_t<void>::marshall(env, result);
+  err = js_type_info_t<void>::marshall(env, result);
   assert(err == 0);
 
   return result;
@@ -399,11 +403,11 @@ js_marshall_untyped_value(js_env_t *env) {
 
 template <typename T>
 constexpr auto
-js_unmarshall_typed_value(js_env_t *env, typename js_type_container_t<T>::type value) {
+js_unmarshall_typed_value(js_env_t *env, typename js_type_info_t<T>::type value) {
   int err;
 
   T result;
-  err = js_type_container_t<T>::unmarshall(env, value, result);
+  err = js_type_info_t<T>::unmarshall(env, value, result);
   assert(err == 0);
 
   return result;
@@ -415,7 +419,7 @@ js_unmarshall_untyped_value(js_env_t *env, js_value_t *value) {
   int err;
 
   T result;
-  err = js_type_container_t<T>::unmarshall(env, value, result);
+  err = js_type_info_t<T>::unmarshall(env, value, result);
   assert(err == 0);
 
   return result;
@@ -424,7 +428,7 @@ js_unmarshall_untyped_value(js_env_t *env, js_value_t *value) {
 template <auto fn, typename R, typename... A>
 constexpr auto
 js_typed_callback() {
-  return +[](js_type_container_t<A>::type... args, js_typed_callback_info_t *info) -> js_type_container_t<R>::type {
+  return +[](js_type_info_t<A>::type... args, js_typed_callback_info_t *info) -> js_type_info_t<R>::type {
     int err;
 
     js_env_t *env;
@@ -496,11 +500,11 @@ js_create_function(js_env_t *env, const char *name, size_t len, js_function_t<R,
   js_callback_signature_t signature;
 
   int args[] = {
-    js_type_container_t<A>::signature()...
+    js_type_info_t<A>::signature()...
   };
 
   signature.version = 0;
-  signature.result = js_type_container_t<R>::signature();
+  signature.result = js_type_info_t<R>::signature();
   signature.args_len = sizeof...(A);
   signature.args = args;
 
@@ -797,6 +801,30 @@ js_get_property(js_env_t *env, const js_object_t &object, const char *name, js_h
   return js_get_named_property(env, object.value, name, &result.value);
 }
 
+template <typename T>
+constexpr auto
+js_get_property(js_env_t *env, const js_object_t &object, const js_name_t &name, T &result) {
+  int err;
+
+  js_value_t *value;
+  err = js_get_property(env, object.value, name.value, &value);
+  if (err < 0) return err;
+
+  return js_type_info_t<T>::unmarshall(env, value, result);
+}
+
+template <typename T>
+constexpr auto
+js_get_property(js_env_t *env, const js_object_t &object, const char *name, T &result) {
+  int err;
+
+  js_value_t *value;
+  err = js_get_named_property(env, object.value, name, &value);
+  if (err < 0) return err;
+
+  return js_type_info_t<T>::unmarshall(env, value, result);
+}
+
 constexpr auto
 js_set_property(js_env_t *env, const js_object_t &object, const js_name_t &name, const js_handle_t &value) {
   return js_set_property(env, object.value, name.value, value.value);
@@ -805,6 +833,64 @@ js_set_property(js_env_t *env, const js_object_t &object, const js_name_t &name,
 constexpr auto
 js_set_property(js_env_t *env, const js_object_t &object, const char *name, const js_handle_t &value) {
   return js_set_named_property(env, object.value, name, value.value);
+}
+
+template <typename T>
+constexpr auto
+js_set_property(js_env_t *env, const js_object_t &object, const js_name_t &name, const T &value) {
+  int err;
+
+  js_value_t *marshalled;
+  err = js_type_info_t<T>::marshall(env, value, marshalled);
+  if (err < 0) return err;
+
+  return js_set_property(env, object.value, name.value, marshalled);
+}
+
+template <typename T>
+constexpr auto
+js_set_property(js_env_t *env, const js_object_t &object, const char *name, const T &value) {
+  int err;
+
+  js_value_t *marshalled;
+  err = js_type_info_t<T>::marshall(env, value, marshalled);
+  if (err < 0) return err;
+
+  return js_set_named_property(env, object.value, name, marshalled);
+}
+
+constexpr auto
+js_get_element(js_env_t *env, const js_object_t &object, uint32_t index, js_handle_t &result) {
+  return js_get_element(env, object.value, index, &result.value);
+}
+
+template <typename T>
+constexpr auto
+js_get_element(js_env_t *env, const js_object_t &object, uint32_t index, T &result) {
+  int err;
+
+  js_value_t *value;
+  err = js_get_element(env, object.value, index, &value);
+  if (err < 0) return err;
+
+  return js_type_info_t<T>::unmarshall(env, value, result);
+}
+
+constexpr auto
+js_set_element(js_env_t *env, const js_object_t &object, uint32_t index, const js_handle_t &value) {
+  return js_set_element(env, object.value, index, value.value);
+}
+
+template <typename T>
+constexpr auto
+js_set_element(js_env_t *env, const js_object_t &object, uint32_t index, const T &value) {
+  int err;
+
+  js_value_t *marshalled;
+  err = js_type_info_t<T>::marshall(env, value, marshalled);
+  if (err < 0) return err;
+
+  return js_set_element(env, object.value, index, marshalled);
 }
 
 template <typename T>
