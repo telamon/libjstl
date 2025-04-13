@@ -4,8 +4,10 @@
 
 #include "../include/jstl.h"
 
-void
-on_call(js_env_t *) {}
+double
+on_call(js_env_t *env) {
+  return 1.234;
+}
 
 int
 main() {
@@ -25,12 +27,15 @@ main() {
   e = js_open_handle_scope(env, &scope);
   assert(e == 0);
 
-  js_function_t<void> fn;
+  js_function_t<double> fn;
   e = js_create_function<on_call>(env, fn);
   assert(e == 0);
 
-  e = js_call_function(env, fn);
+  double result;
+  e = js_call_function(env, fn, result);
   assert(e == 0);
+
+  assert(result == 1.234);
 
   e = js_close_handle_scope(env, scope);
   assert(e == 0);

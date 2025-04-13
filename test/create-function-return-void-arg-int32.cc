@@ -1,7 +1,6 @@
 #include <assert.h>
 #include <js.h>
 #include <stdint.h>
-#include <utf.h>
 #include <uv.h>
 
 #include "../include/jstl.h"

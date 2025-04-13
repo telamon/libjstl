@@ -5,7 +5,9 @@
 #include "../include/jstl.h"
 
 void
-on_call(js_env_t *) {}
+on_call(js_env_t *env, double n) {
+  assert(n == 1.23);
+}
 
 int
 main() {
@@ -25,11 +27,11 @@ main() {
   e = js_open_handle_scope(env, &scope);
   assert(e == 0);
 
-  js_function_t<void> fn;
+  js_function_t<void, double> fn;
   e = js_create_function<on_call>(env, fn);
   assert(e == 0);
 
-  e = js_call_function(env, fn);
+  e = js_call_function(env, fn, 1.23);
   assert(e == 0);
 
   e = js_close_handle_scope(env, scope);

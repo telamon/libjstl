@@ -6,6 +6,8 @@
 #include <utility>
 
 #include <js.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <utf.h>
 
 struct js_handle_t {
@@ -147,30 +149,6 @@ struct js_type_info_t<void> {
   static constexpr auto
   marshall(js_env_t *env, js_value_t *&result) {
     return js_get_undefined(env, &result);
-  }
-};
-
-template <>
-struct js_type_info_t<js_receiver_t> {
-  using type = js_value_t *;
-
-  static constexpr auto
-  signature() {
-    return js_object;
-  }
-
-  static constexpr auto
-  marshall(js_env_t *, const js_receiver_t &receiver, js_value_t *&result) {
-    result = receiver.value;
-
-    return 0;
-  }
-
-  static auto
-  unmarshall(js_env_t *, js_value_t *value, js_receiver_t &result) {
-    result = js_receiver_t(value);
-
-    return 0;
   }
 };
 
@@ -411,6 +389,30 @@ struct js_type_info_t<js_typedarray_t<T>> {
   static auto
   unmarshall(js_env_t *env, js_value_t *value, js_typedarray_t<T> &result) {
     result = js_typedarray_t<T>(value);
+
+    return 0;
+  }
+};
+
+template <>
+struct js_type_info_t<js_receiver_t> {
+  using type = js_value_t *;
+
+  static constexpr auto
+  signature() {
+    return js_object;
+  }
+
+  static constexpr auto
+  marshall(js_env_t *, const js_receiver_t &receiver, js_value_t *&result) {
+    result = receiver.value;
+
+    return 0;
+  }
+
+  static auto
+  unmarshall(js_env_t *, js_value_t *value, js_receiver_t &result) {
+    result = js_receiver_t(value);
 
     return 0;
   }
