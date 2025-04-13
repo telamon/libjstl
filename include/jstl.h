@@ -86,7 +86,7 @@ struct js_typedarray_t : js_handle_t {
 
   js_typedarray_t() : js_handle_t(), env(nullptr), view(nullptr) {}
 
-  js_typedarray_t(js_env_t *env, js_value_t *value) : js_handle_t(value), env(env), view(nullptr) {}
+  js_typedarray_t(js_value_t *value) : js_handle_t(value), env(nullptr), view(nullptr) {}
 
   ~js_typedarray_t() {
     if (view == nullptr) return;
@@ -114,6 +114,21 @@ template <typename T>
 struct js_type_container_t;
 
 template <>
+struct js_type_container_t<void> {
+  using type = void;
+
+  static constexpr auto
+  signature() {
+    return js_undefined;
+  }
+
+  static auto
+  marshall(js_env_t *env, js_value_t *&result) {
+    return js_get_undefined(env, &result);
+  }
+};
+
+template <>
 struct js_type_container_t<js_receiver_t> {
   using type = js_value_t *;
 
@@ -127,21 +142,6 @@ struct js_type_container_t<js_receiver_t> {
     result = js_receiver_t(value);
 
     return 0;
-  }
-};
-
-template <>
-struct js_type_container_t<void> {
-  using type = void;
-
-  static constexpr auto
-  signature() {
-    return js_undefined;
-  }
-
-  static auto
-  marshall(js_env_t *env, js_value_t *&result) {
-    return js_get_undefined(env, &result);
   }
 };
 
@@ -357,7 +357,7 @@ struct js_type_container_t<js_typedarray_t<T>> {
 
   static auto
   unmarshall(js_env_t *env, js_value_t *value, js_typedarray_t<T> &result) {
-    result = js_typedarray_t<T>(env, value);
+    result = js_typedarray_t<T>(value);
 
     return 0;
   }
@@ -757,6 +757,8 @@ js_get_typedarray_info(js_env_t *env, js_typedarray_t<T> &typedarray, T *&data, 
   if (typedarray.view) {
     err = js_release_typedarray_view(env, typedarray.view);
     if (err < 0) return err;
+  } else {
+    typedarray.env = env;
   }
 
   return js_get_typedarray_view(env, typedarray.value, nullptr, (void **) &data, &len, &typedarray.view);
