@@ -47,7 +47,7 @@ main() {
   assert(e == 0);
 
   js_function_t<void, js_typedarray_t<uint8_t>> fn;
-  e = js_create_function<on_call>(env, "hello", fn);
+  e = js_create_function<on_call>(env, fn);
   assert(e == 0);
 
   uint8_t *data;

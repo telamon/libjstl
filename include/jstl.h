@@ -122,7 +122,7 @@ struct js_type_container_t<void> {
     return js_undefined;
   }
 
-  static auto
+  static constexpr auto
   marshall(js_env_t *env, js_value_t *&result) {
     return js_get_undefined(env, &result);
   }
@@ -348,7 +348,7 @@ struct js_type_container_t<js_typedarray_t<T>> {
     return js_object;
   }
 
-  static auto
+  static constexpr auto
   marshall(js_env_t *env, const js_typedarray_t<T> &typedarray, js_value_t *&result) {
     result = typedarray.value;
 
@@ -512,6 +512,12 @@ template <auto fn, typename R, typename... A>
 constexpr auto
 js_create_function(js_env_t *env, const std::string &name, js_function_t<R, A...> &result) {
   return js_create_function<fn, R, A...>(env, name.data(), name.length(), result);
+}
+
+template <auto fn, typename R, typename... A>
+constexpr auto
+js_create_function(js_env_t *env, js_function_t<R, A...> &result) {
+  return js_create_function<fn, R, A...>(env, nullptr, 0, result);
 }
 
 template <typename... A>
