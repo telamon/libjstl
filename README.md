@@ -1,6 +1,6 @@
 # libjstl
 
-C++ template library for <https://github.com/holepunchto/libjs>.
+C++ template library for <https://github.com/holepunchto/libjs>. It aims to make interacting with the low-level API safer and more efficient without making callers feel too much like they're writing C++.
 
 ## API
 
