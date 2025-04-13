@@ -123,13 +123,10 @@ struct js_type_container_t<js_receiver_t> {
   }
 
   static auto
-  unmarshall(js_env_t *, js_typed_callback_info_t *, js_value_t *value) {
-    return js_receiver_t(value);
-  }
+  unmarshall(js_env_t *, js_value_t *value, js_receiver_t &result) {
+    result = js_receiver_t(value);
 
-  static auto
-  unmarshall(js_env_t *, js_callback_info_t *, js_value_t *value) {
-    return js_receiver_t(value);
+    return 0;
   }
 };
 
