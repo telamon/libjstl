@@ -1,13 +1,12 @@
 #pragma once
 
+#include <span>
 #include <string>
 #include <type_traits>
 #include <utility>
 
 #include <js.h>
 #include <utf.h>
-
-namespace {
 
 struct js_handle_t {
   js_value_t *value;
@@ -489,7 +488,7 @@ js_create_function(js_env_t *env, const char *name, size_t len, js_function_t<R,
 
 template <auto fn, typename R, typename... A>
 constexpr auto
-js_create_function(js_env_t *env, const std::string name, js_function_t<R, A...> &result) {
+js_create_function(js_env_t *env, const std::string &name, js_function_t<R, A...> &result) {
   return js_create_function<fn, R, A...>(env, name.data(), name.length(), result);
 }
 
@@ -588,7 +587,7 @@ js_create_string(js_env_t *env, const utf8_t *str, size_t len, js_string_t<utf8_
 }
 
 constexpr auto
-js_create_string(js_env_t *env, const std::string str, js_string_t<utf8_t> &result) {
+js_create_string(js_env_t *env, const std::string &str, js_string_t<utf8_t> &result) {
   return js_create_string_utf8(env, (const utf8_t *) str.data(), str.length(), &result.value);
 }
 
@@ -602,6 +601,31 @@ template <typename T>
 constexpr auto
 js_create_arraybuffer(js_env_t *env, T *&data, js_arraybuffer_t &result) {
   return js_create_arraybuffer(env, sizeof(T), (void **) &data, &result.value);
+}
+
+constexpr auto
+js_create_arraybuffer(js_env_t *env, size_t len, js_arraybuffer_t &result) {
+  return js_create_arraybuffer(env, len, nullptr, &result.value);
+}
+
+template <typename T>
+constexpr auto
+js_create_arraybuffer(js_env_t *env, size_t len, js_arraybuffer_t &result) {
+  return js_create_arraybuffer(env, len * sizeof(T), nullptr, &result.value);
+}
+
+template <typename T>
+constexpr auto
+js_create_arraybuffer(js_env_t *env, size_t len, std::span<T> &view, js_arraybuffer_t &result) {
+  int err;
+
+  T *data;
+  err = js_create_arraybuffer(env, len, data, result);
+  if (err < 0) return err;
+
+  view = std::span(data, len);
+
+  return 0;
 }
 
 template <typename T>
@@ -656,12 +680,57 @@ js_create_typedarray(js_env_t *env, size_t len, T *&data, js_typedarray_t<T> &re
 
 template <typename T>
 constexpr auto
+js_create_typedarray(js_env_t *env, size_t len, std::span<T> &view, js_typedarray_t<T> &result) {
+  int err;
+
+  js_arraybuffer_t arraybuffer;
+  err = js_create_arraybuffer(env, len, view, arraybuffer);
+  if (err < 0) return err;
+
+  return js_create_typedarray(env, len, arraybuffer, result);
+}
+
+template <typename T>
+constexpr auto
+js_create_typedarray(js_env_t *env, size_t len, js_typedarray_t<T> &result) {
+  int err;
+
+  js_arraybuffer_t arraybuffer;
+  err = js_create_arraybuffer<T>(env, len, arraybuffer);
+  if (err < 0) return err;
+
+  return js_create_typedarray(env, len, arraybuffer, result);
+}
+
+template <typename T>
+constexpr auto
 js_get_arraybuffer_info(js_env_t *env, const js_arraybuffer_t &arraybuffer, T *&data, size_t &len) {
   int err;
   err = js_get_arraybuffer_info(env, arraybuffer.value, (void **) &data, &len);
   if (err < 0) return err;
 
   len /= sizeof(T);
+
+  return 0;
+}
+
+template <typename T>
+constexpr auto
+js_get_arraybuffer_info(js_env_t *env, const js_arraybuffer_t &arraybuffer, T *&data) {
+  return js_get_arraybuffer_info(env, arraybuffer.value, (void **) &data, nullptr);
+}
+
+template <typename T>
+constexpr auto
+js_get_arraybuffer_info(js_env_t *env, const js_arraybuffer_t &arraybuffer, std::span<T> &view) {
+  int err;
+
+  T *data;
+  size_t len;
+  err = js_get_arraybuffer_info(env, arraybuffer, data, len);
+  if (err < 0) return err;
+
+  view = std::span(data, len);
 
   return 0;
 }
@@ -677,6 +746,21 @@ js_get_typedarray_info(js_env_t *env, js_typedarray_t<T> &typedarray, T *&data, 
   }
 
   return js_get_typedarray_view(env, typedarray.value, nullptr, (void **) &data, &len, &typedarray.view);
+}
+
+template <typename T>
+constexpr auto
+js_get_typedarray_info(js_env_t *env, js_typedarray_t<T> &typedarray, std::span<T> &view) {
+  int err;
+
+  T *data;
+  size_t len;
+  err = js_get_typedarray_info(env, typedarray, data, len);
+  if (err < 0) return err;
+
+  view = std::span(data, len);
+
+  return 0;
 }
 
 constexpr auto
@@ -712,7 +796,7 @@ js_run_script(js_env_t *env, const char *file, size_t len, int offset, const js_
 
 template <typename T>
 constexpr auto
-js_run_script(js_env_t *env, std::string file, int offset, const js_string_t<T> &source, js_handle_t &result) {
+js_run_script(js_env_t *env, const std::string &file, int offset, const js_string_t<T> &source, js_handle_t &result) {
   return js_run_script(env, file.data(), file.length(), offset, source.value, &result.value);
 }
 
@@ -721,5 +805,3 @@ constexpr auto
 js_run_script(js_env_t *env, const js_string_t<T> &source, js_handle_t &result) {
   return js_run_script(env, nullptr, 0, 0, source.value, &result.value);
 }
-
-} // namespace
