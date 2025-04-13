@@ -1,6 +1,7 @@
 fetch_package("github:holepunchto/libjs")
 
 list(APPEND tests
+  create-typed-function-return-string
   create-typed-function-return-uint8array
   create-typed-function-return-void
   create-typed-function-return-void-arg-uint8array

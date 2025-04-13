@@ -32,6 +32,12 @@ struct js_primitive_t : js_handle_t {
   js_primitive_t(js_value_t *value) : js_handle_t(value) {}
 };
 
+struct js_boolean_t : js_primitive_t {
+  js_boolean_t() : js_primitive_t() {}
+
+  js_boolean_t(js_value_t *value) : js_primitive_t(value) {}
+};
+
 struct js_numeric_t : js_primitive_t {
   js_numeric_t() : js_primitive_t() {}
 
@@ -62,11 +68,20 @@ struct js_symbol_t : js_name_t {
   js_symbol_t(js_value_t *value) : js_name_t(value) {}
 };
 
-template <typename T>
 struct js_string_t : js_name_t {
-  js_string_t() : js_name_t() {}
+  js_string_view_t *view;
 
-  js_string_t(js_value_t *value) : js_name_t(value) {}
+  js_string_t() : js_name_t(), view(nullptr) {}
+
+  js_string_t(js_value_t *value) : js_name_t(value), view(nullptr) {}
+
+  ~js_string_t() {
+    if (view == nullptr) return;
+
+    int err;
+    err = js_release_string_view(nullptr, view);
+    assert(err == 0);
+  }
 };
 
 struct js_object_t : js_handle_t {
@@ -319,6 +334,30 @@ struct js_type_info_t<double> {
   static constexpr auto
   unmarshall(js_env_t *env, js_value_t *value, double &result) {
     return js_get_value_double(env, value, &result);
+  }
+};
+
+template <>
+struct js_type_info_t<js_string_t> {
+  using type = js_value_t *;
+
+  static constexpr auto
+  signature() {
+    return js_string;
+  }
+
+  static constexpr auto
+  marshall(js_env_t *env, const js_string_t &string, js_value_t *&result) {
+    result = string.value;
+
+    return 0;
+  }
+
+  static auto
+  unmarshall(js_env_t *env, js_value_t *value, js_string_t &result) {
+    result = js_string_t(value);
+
+    return 0;
   }
 };
 
@@ -609,12 +648,12 @@ js_create_object(js_env_t *env, js_object_t &result) {
 }
 
 constexpr auto
-js_create_string(js_env_t *env, const utf8_t *str, size_t len, js_string_t<utf8_t> &result) {
+js_create_string(js_env_t *env, const utf8_t *str, size_t len, js_string_t &result) {
   return js_create_string_utf8(env, str, len, &result.value);
 }
 
 constexpr auto
-js_create_string(js_env_t *env, const std::string &str, js_string_t<utf8_t> &result) {
+js_create_string(js_env_t *env, const std::string &str, js_string_t &result) {
   return js_create_string_utf8(env, (const utf8_t *) str.data(), str.length(), &result.value);
 }
 
@@ -791,6 +830,19 @@ js_get_typedarray_info(js_env_t *env, js_typedarray_t<T> &typedarray, std::span<
 }
 
 constexpr auto
+js_get_value_string(js_env_t *env, const js_string_t &string, std::string &result) {
+  int err;
+
+  size_t len;
+  err = js_get_value_string_utf8(env, string.value, nullptr, 0, &len);
+  if (err < 0) return err;
+
+  result.resize(len);
+
+  return js_get_value_string_utf8(env, string.value, (utf8_t *) result.data(), result.length(), nullptr);
+}
+
+constexpr auto
 js_get_global(js_env_t *env, js_object_t &result) {
   return js_get_global(env, &result.value);
 }
@@ -897,20 +949,17 @@ js_set_element(js_env_t *env, const js_object_t &object, uint32_t index, const T
   return js_set_element(env, object.value, index, marshalled);
 }
 
-template <typename T>
 constexpr auto
-js_run_script(js_env_t *env, const char *file, size_t len, int offset, const js_string_t<T> &source, js_handle_t &result) {
+js_run_script(js_env_t *env, const char *file, size_t len, int offset, const js_string_t &source, js_handle_t &result) {
   return js_run_script(env, file, len, offset, source.value, &result.value);
 }
 
-template <typename T>
 constexpr auto
-js_run_script(js_env_t *env, const std::string &file, int offset, const js_string_t<T> &source, js_handle_t &result) {
+js_run_script(js_env_t *env, const std::string &file, int offset, const js_string_t &source, js_handle_t &result) {
   return js_run_script(env, file.data(), file.length(), offset, source.value, &result.value);
 }
 
-template <typename T>
 constexpr auto
-js_run_script(js_env_t *env, const js_string_t<T> &source, js_handle_t &result) {
+js_run_script(js_env_t *env, const js_string_t &source, js_handle_t &result) {
   return js_run_script(env, nullptr, 0, 0, source.value, &result.value);
 }
