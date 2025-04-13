@@ -17,11 +17,11 @@ struct js_handle_t {
 
   virtual ~js_handle_t() = default;
 
-  operator js_value_t *() const {
+  constexpr operator js_value_t *() const {
     return value;
   }
 
-  operator js_value_t **() {
+  constexpr operator js_value_t **() {
     return &value;
   }
 };
