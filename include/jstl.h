@@ -20,6 +20,10 @@ struct js_handle_t {
   operator js_value_t *() const {
     return value;
   }
+
+  operator js_value_t **() {
+    return &value;
+  }
 };
 
 struct js_primitive_t : js_handle_t {
