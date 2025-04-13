@@ -18,16 +18,34 @@ struct js_handle_t {
   virtual ~js_handle_t() = default;
 };
 
-struct js_receiver_t : js_handle_t {
-  js_receiver_t() : js_handle_t() {}
+struct js_primitive_t : js_handle_t {
+  js_primitive_t() : js_handle_t() {}
 
-  js_receiver_t(js_value_t *value) : js_handle_t(value) {}
+  js_primitive_t(js_value_t *value) : js_handle_t(value) {}
 };
 
-struct js_name_t : js_handle_t {
-  js_name_t() : js_handle_t() {}
+struct js_numeric_t : js_primitive_t {
+  js_numeric_t() : js_primitive_t() {}
 
-  js_name_t(js_value_t *value) : js_handle_t(value) {}
+  js_numeric_t(js_value_t *value) : js_primitive_t(value) {}
+};
+
+struct js_number_t : js_numeric_t {
+  js_number_t() : js_numeric_t() {}
+
+  js_number_t(js_value_t *value) : js_numeric_t(value) {}
+};
+
+struct js_integer_t : js_number_t {
+  js_integer_t() : js_number_t() {}
+
+  js_integer_t(js_value_t *value) : js_number_t(value) {}
+};
+
+struct js_name_t : js_primitive_t {
+  js_name_t() : js_primitive_t() {}
+
+  js_name_t(js_value_t *value) : js_primitive_t(value) {}
 };
 
 struct js_symbol_t : js_name_t {
@@ -86,6 +104,12 @@ struct js_function_t : js_handle_t {
   js_function_t(js_value_t *value) : js_handle_t(value) {}
 };
 
+struct js_receiver_t : js_handle_t {
+  js_receiver_t() : js_handle_t() {}
+
+  js_receiver_t(js_value_t *value) : js_handle_t(value) {}
+};
+
 template <typename T>
 struct js_type_container_t;
 
@@ -119,14 +143,8 @@ struct js_type_container_t<void> {
   }
 
   static auto
-  marshall(js_env_t *env, js_callback_info_t *) {
-    int err;
-
-    js_value_t *result;
-    err = js_get_undefined(env, &result);
-    assert(err == 0);
-
-    return result;
+  marshall(js_env_t *env, js_value_t *&result) {
+    return js_get_undefined(env, &result);
   }
 };
 
@@ -140,35 +158,27 @@ struct js_type_container_t<bool> {
   }
 
   static constexpr auto
-  marshall(js_env_t *, js_typed_callback_info_t *, bool value) {
-    return value;
+  marshall(js_env_t *, bool value, bool &result) {
+    result = value;
+
+    return 0;
   }
 
   static constexpr auto
-  marshall(js_env_t *env, js_callback_info_t *, bool value) {
-    int err;
-
-    js_value_t *result;
-    err = js_get_boolean(env, value, &result);
-    assert(err == 0);
-
-    return result;
+  marshall(js_env_t *env, bool value, js_value_t *&result) {
+    return js_get_boolean(env, value, &result);
   }
 
   static constexpr auto
-  unmarshall(js_env_t *, js_typed_callback_info_t *, bool value) {
-    return value;
+  unmarshall(js_env_t *, bool value, bool &result) {
+    result = value;
+
+    return 0;
   }
 
   static constexpr auto
-  unmarshall(js_env_t *env, js_callback_info_t *, js_value_t *value) {
-    int err;
-
-    bool result;
-    err = js_get_value_bool(env, value, &result);
-    assert(err == 0);
-
-    return result;
+  unmarshall(js_env_t *env, js_value_t *value, bool &result) {
+    return js_get_value_bool(env, value, &result);
   }
 };
 
@@ -182,35 +192,27 @@ struct js_type_container_t<int32_t> {
   }
 
   static constexpr auto
-  marshall(js_env_t *, js_typed_callback_info_t *, int32_t value) {
-    return value;
+  marshall(js_env_t *, int32_t value, int32_t &result) {
+    result = value;
+
+    return 0;
   }
 
   static constexpr auto
-  marshall(js_env_t *env, js_callback_info_t *, int32_t value) {
-    int err;
-
-    js_value_t *result;
-    err = js_create_int32(env, value, &result);
-    assert(err == 0);
-
-    return result;
+  marshall(js_env_t *env, int32_t value, js_value_t *&result) {
+    return js_create_int32(env, value, &result);
   }
 
   static constexpr auto
-  unmarshall(js_env_t *, js_typed_callback_info_t *, int32_t value) {
-    return value;
+  unmarshall(js_env_t *, int32_t value, int32_t &result) {
+    result = value;
+
+    return 0;
   }
 
   static constexpr auto
-  unmarshall(js_env_t *env, js_callback_info_t *, js_value_t *value) {
-    int err;
-
-    int32_t result;
-    err = js_get_value_int32(env, value, &result);
-    assert(err == 0);
-
-    return result;
+  unmarshall(js_env_t *env, js_value_t *value, int32_t &result) {
+    return js_get_value_int32(env, value, &result);
   }
 };
 
@@ -224,35 +226,27 @@ struct js_type_container_t<uint32_t> {
   }
 
   static constexpr auto
-  marshall(js_env_t *, js_typed_callback_info_t *, uint32_t value) {
-    return value;
+  marshall(js_env_t *, uint32_t value, uint32_t &result) {
+    result = value;
+
+    return 0;
   }
 
   static constexpr auto
-  marshall(js_env_t *env, js_callback_info_t *, uint32_t value) {
-    int err;
-
-    js_value_t *result;
-    err = js_create_uint32(env, value, &result);
-    assert(err == 0);
-
-    return result;
+  marshall(js_env_t *env, uint32_t value, js_value_t *&result) {
+    return js_create_uint32(env, value, &result);
   }
 
   static constexpr auto
-  unmarshall(js_env_t *env, js_typed_callback_info_t *, uint32_t value) {
-    return value;
+  unmarshall(js_env_t *env, uint32_t value, uint32_t &result) {
+    result = value;
+
+    return 0;
   }
 
   static constexpr auto
-  unmarshall(js_env_t *env, js_callback_info_t *, js_value_t *value) {
-    int err;
-
-    uint32_t result;
-    err = js_get_value_uint32(env, value, &result);
-    assert(err == 0);
-
-    return result;
+  unmarshall(js_env_t *env, js_value_t *value, uint32_t &result) {
+    return js_get_value_uint32(env, value, &result);
   }
 };
 
@@ -266,35 +260,27 @@ struct js_type_container_t<int64_t> {
   }
 
   static constexpr auto
-  marshall(js_env_t *, js_typed_callback_info_t *, int64_t value) {
-    return value;
+  marshall(js_env_t *, int64_t value, int64_t &result) {
+    result = value;
+
+    return 0;
   }
 
   static constexpr auto
-  marshall(js_env_t *env, js_callback_info_t *, int64_t value) {
-    int err;
-
-    js_value_t *result;
-    err = js_create_int64(env, value, &result);
-    assert(err == 0);
-
-    return result;
+  marshall(js_env_t *env, int64_t value, js_value_t *&result) {
+    return js_create_int64(env, value, &result);
   }
 
   static constexpr auto
-  unmarshall(js_env_t *, js_typed_callback_info_t *, int64_t value) {
-    return value;
+  unmarshall(js_env_t *, int64_t value, int64_t &result) {
+    result = value;
+
+    return 0;
   }
 
   static constexpr auto
-  unmarshall(js_env_t *env, js_callback_info_t *, js_value_t *value) {
-    int err;
-
-    int64_t result;
-    err = js_get_value_int64(env, value, &result);
-    assert(err == 0);
-
-    return result;
+  unmarshall(js_env_t *env, js_value_t *value, int64_t &result) {
+    return js_get_value_int64(env, value, &result);
   }
 };
 
@@ -308,35 +294,27 @@ struct js_type_container_t<double> {
   }
 
   static constexpr auto
-  marshall(js_env_t *, js_typed_callback_info_t *, double value) {
-    return value;
+  marshall(js_env_t *, double value, double &result) {
+    result = value;
+
+    return 0;
   }
 
   static constexpr auto
-  marshall(js_env_t *env, js_callback_info_t *, double value) {
-    int err;
-
-    js_value_t *result;
-    err = js_create_double(env, value, &result);
-    assert(err == 0);
-
-    return result;
+  marshall(js_env_t *env, double value, js_value_t *&result) {
+    return js_create_double(env, value, &result);
   }
 
   static constexpr auto
-  unmarshall(js_env_t *, js_typed_callback_info_t *, double value) {
-    return value;
+  unmarshall(js_env_t *, double value, double &result) {
+    result = value;
+
+    return 0;
   }
 
   static constexpr auto
-  unmarshall(js_env_t *env, js_callback_info_t *, js_value_t *value) {
-    int err;
-
-    double result;
-    err = js_get_value_double(env, value, &result);
-    assert(err == 0);
-
-    return result;
+  unmarshall(js_env_t *env, js_value_t *value, double &result) {
+    return js_get_value_double(env, value, &result);
   }
 };
 
@@ -350,23 +328,17 @@ struct js_type_container_t<js_arraybuffer_t> {
   }
 
   static constexpr auto
-  marshall(js_env_t *env, js_typed_callback_info_t *, const js_arraybuffer_t &arraybuffer) {
-    return arraybuffer.value;
-  }
+  marshall(js_env_t *env, const js_arraybuffer_t &arraybuffer, js_value_t *&result) {
+    result = arraybuffer.value;
 
-  static constexpr auto
-  marshall(js_env_t *env, js_callback_info_t *, const js_arraybuffer_t &arraybuffer) {
-    return arraybuffer.value;
+    return 0;
   }
 
   static auto
-  unmarshall(js_env_t *env, js_typed_callback_info_t *, js_value_t *value) {
-    return js_arraybuffer_t(value);
-  }
+  unmarshall(js_env_t *env, js_value_t *value, js_arraybuffer_t &result) {
+    result = js_arraybuffer_t(value);
 
-  static auto
-  unmarshall(js_env_t *env, js_callback_info_t *, js_value_t *value) {
-    return js_arraybuffer_t(value);
+    return 0;
   }
 };
 
@@ -380,25 +352,78 @@ struct js_type_container_t<js_typedarray_t<T>> {
   }
 
   static auto
-  marshall(js_env_t *env, js_typed_callback_info_t *, const js_typedarray_t<T> &typedarray) {
-    return typedarray.value;
+  marshall(js_env_t *env, const js_typedarray_t<T> &typedarray, js_value_t *&result) {
+    result = typedarray.value;
+
+    return 0;
   }
 
   static auto
-  marshall(js_env_t *env, js_callback_info_t *, const js_typedarray_t<T> &typedarray) {
-    return typedarray.value;
-  }
+  unmarshall(js_env_t *env, js_value_t *value, js_typedarray_t<T> &result) {
+    result = js_typedarray_t<T>(env, value);
 
-  static auto
-  unmarshall(js_env_t *env, js_typed_callback_info_t *, js_value_t *value) {
-    return js_typedarray_t<T>(env, value);
-  }
-
-  static auto
-  unmarshall(js_env_t *env, js_callback_info_t *info, js_value_t *value) {
-    return js_typedarray_t<T>(env, value);
+    return 0;
   }
 };
+
+template <typename T>
+constexpr auto
+js_marshall_typed_value(js_env_t *env, T value) {
+  int err;
+
+  typename js_type_container_t<T>::type result;
+  err = js_type_container_t<T>::marshall(env, value, result);
+  assert(err == 0);
+
+  return result;
+}
+
+template <typename T>
+constexpr auto
+js_marshall_untyped_value(js_env_t *env, T value) {
+  int err;
+
+  js_value_t *result;
+  err = js_type_container_t<T>::marshall(env, value, result);
+  assert(err == 0);
+
+  return result;
+}
+
+constexpr auto
+js_marshall_untyped_value(js_env_t *env) {
+  int err;
+
+  js_value_t *result;
+  err = js_type_container_t<void>::marshall(env, result);
+  assert(err == 0);
+
+  return result;
+}
+
+template <typename T>
+constexpr auto
+js_unmarshall_typed_value(js_env_t *env, typename js_type_container_t<T>::type value) {
+  int err;
+
+  T result;
+  err = js_type_container_t<T>::unmarshall(env, value, result);
+  assert(err == 0);
+
+  return result;
+}
+
+template <typename T>
+constexpr auto
+js_unmarshall_untyped_value(js_env_t *env, js_value_t *value) {
+  int err;
+
+  T result;
+  err = js_type_container_t<T>::unmarshall(env, value, result);
+  assert(err == 0);
+
+  return result;
+}
 
 template <auto fn, typename R, typename... A>
 constexpr auto
@@ -411,11 +436,11 @@ js_typed_callback() {
     assert(err == 0);
 
     if constexpr (std::is_same<R, void>()) {
-      fn(env, js_type_container_t<A>::unmarshall(env, info, args)...);
+      fn(env, js_unmarshall_typed_value<A>(env, args)...);
     } else {
-      auto result = fn(env, js_type_container_t<A>::unmarshall(env, info, args)...);
+      auto result = fn(env, js_unmarshall_typed_value<A>(env, args)...);
 
-      return js_type_container_t<R>::marshall(env, info, std::move(result));
+      return js_marshall_typed_value<R>(env, std::move(result));
     }
   };
 }
@@ -448,13 +473,13 @@ js_untyped_callback(std::index_sequence<I...>) {
     }
 
     if constexpr (std::is_same<R, void>()) {
-      fn(env, js_type_container_t<A>::unmarshall(env, info, argv[I])...);
+      fn(env, js_unmarshall_untyped_value<A>(env, argv[I])...);
 
-      return js_type_container_t<R>::marshall(env, info);
+      return js_marshall_untyped_value(env);
     } else {
-      auto result = fn(env, js_type_container_t<A>::unmarshall(env, info, argv[I])...);
+      auto result = fn(env, js_unmarshall_untyped_value<A>(env, argv[I])...);
 
-      return js_type_container_t<R>::marshall(env, info, std::move(result));
+      return js_marshall_untyped_value<R>(env, std::move(result));
     }
   };
 }
@@ -497,12 +522,10 @@ constexpr auto
 js_call_function(js_env_t *env, const js_function_t<void, js_receiver_t, A...> &function, const js_receiver_t &receiver, const A &...args) {
   int err;
 
-  js_callback_info_t *info;
-
   size_t argc = sizeof...(A);
 
   js_value_t *argv[] = {
-    js_type_container_t<A>::marshall(env, info, args...)...
+    js_marshall_untyped_value<A>(env, args...)...
   };
 
   return js_call_function(env, receiver.value, function.value, argc, argv, nullptr);
@@ -513,19 +536,17 @@ constexpr auto
 js_call_function(js_env_t *env, const js_function_t<R, js_receiver_t, A...> &function, const js_receiver_t &receiver, const A &...args, R &result) {
   int err;
 
-  js_callback_info_t *info;
-
   size_t argc = sizeof...(A);
 
   js_value_t *argv[] = {
-    js_type_container_t<A>::marshall(env, info, args...)...
+    js_marshall_untyped_value<A>(env, args...)...
   };
 
   js_value_t *value;
   err = js_call_function(env, receiver, function.value, argc, argv, &value);
   if (err < 0) return err;
 
-  result = js_type_container_t<R>::unmarshall(env, info, value);
+  result = js_unmarshall_untyped_value<R>(env, value);
 
   return 0;
 }
@@ -535,12 +556,10 @@ constexpr auto
 js_call_function(js_env_t *env, const js_function_t<void, A...> &function, const A &...args) {
   int err;
 
-  js_callback_info_t *info;
-
   size_t argc = sizeof...(A);
 
   js_value_t *argv[] = {
-    js_type_container_t<A>::marshall(env, info, args...)...
+    js_marshall_untyped_value<A>(env, args...)...
   };
 
   js_value_t *receiver;
@@ -555,12 +574,10 @@ constexpr auto
 js_call_function(js_env_t *env, const js_function_t<R, A...> &function, const A &...args, R &result) {
   int err;
 
-  js_callback_info_t *info;
-
   size_t argc = sizeof...(A);
 
   js_value_t *argv[] = {
-    js_type_container_t<A>::marshall(env, info, args...)...
+    js_marshall_untyped_value<A>(env, args...)...
   };
 
   js_value_t *receiver;
@@ -571,7 +588,7 @@ js_call_function(js_env_t *env, const js_function_t<R, A...> &function, const A 
   err = js_call_function(env, receiver, function.value, argc, argv, &value);
   if (err < 0) return err;
 
-  result = js_type_container_t<R>::unmarshall(env, info, value);
+  result = js_unmarshall_untyped_value<R>(env, value);
 
   return 0;
 }
