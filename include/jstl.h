@@ -81,18 +81,17 @@ struct js_arraybuffer_t : js_handle_t {
 
 template <typename T>
 struct js_typedarray_t : js_handle_t {
-  js_env_t *env;
   js_typedarray_view_t *view;
 
-  js_typedarray_t() : js_handle_t(), env(nullptr), view(nullptr) {}
+  js_typedarray_t() : js_handle_t(), view(nullptr) {}
 
-  js_typedarray_t(js_value_t *value) : js_handle_t(value), env(nullptr), view(nullptr) {}
+  js_typedarray_t(js_value_t *value) : js_handle_t(value), view(nullptr) {}
 
   ~js_typedarray_t() {
     if (view == nullptr) return;
 
     int err;
-    err = js_release_typedarray_view(env, view);
+    err = js_release_typedarray_view(nullptr, view);
     assert(err == 0);
   }
 };
@@ -763,8 +762,6 @@ js_get_typedarray_info(js_env_t *env, js_typedarray_t<T> &typedarray, T *&data, 
   if (typedarray.view) {
     err = js_release_typedarray_view(env, typedarray.view);
     if (err < 0) return err;
-  } else {
-    typedarray.env = env;
   }
 
   return js_get_typedarray_view(env, typedarray.value, nullptr, (void **) &data, &len, &typedarray.view);
