@@ -28,10 +28,10 @@ main() {
   assert(e == 0);
 
   js_typedarray_t<uint8_t> typedarray;
-  e = js_create_typedarray(env, sizeof(data), typedarray);
+  e = js_create_typedarray(env, sizeof(struct data), typedarray);
   assert(e == 0);
 
-  data *data;
+  struct data *data;
   e = js_get_typedarray_info(env, typedarray, data);
   assert(e == 0);
 
