@@ -937,7 +937,15 @@ js_get_arraybuffer_info(js_env_t *env, const js_arraybuffer_t &arraybuffer, T *&
 template <typename T>
 constexpr auto
 js_get_arraybuffer_info(js_env_t *env, const js_arraybuffer_t &arraybuffer, T *&data) {
-  return js_get_arraybuffer_info(env, arraybuffer.value, (void **) &data, nullptr);
+  int err;
+
+  size_t len;
+  err = js_get_arraybuffer_info(env, arraybuffer.value, (void **) &data, &len);
+  if (err < 0) return err;
+
+  assert(len == sizeof(T));
+
+  return 0;
 }
 
 template <typename T>
@@ -966,6 +974,25 @@ js_get_typedarray_info(js_env_t *env, js_typedarray_t<T> &typedarray, T *&data, 
   }
 
   return js_get_typedarray_view(env, typedarray.value, nullptr, (void **) &data, &len, &typedarray.view);
+}
+
+template <typename T>
+constexpr auto
+js_get_typedarray_info(js_env_t *env, js_typedarray_t<uint8_t> &typedarray, T *&data) {
+  int err;
+
+  if (typedarray.view) {
+    err = js_release_typedarray_view(env, typedarray.view);
+    if (err < 0) return err;
+  }
+
+  size_t len;
+  err = js_get_typedarray_view(env, typedarray.value, nullptr, (void **) &data, &len, &typedarray.view);
+  if (err < 0) return err;
+
+  assert(len == sizeof(T));
+
+  return 0;
 }
 
 template <typename T>
