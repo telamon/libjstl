@@ -440,7 +440,7 @@ struct js_type_info_t<char[N]> {
   }
 
   static constexpr auto
-  unmarshall(js_env_t *env, js_value_t *value, const char result[N]) {
+  unmarshall(js_env_t *env, js_value_t *value, char result[N]) {
     return js_get_value_string_utf8(env, value, (utf8_t *) result, N, nullptr);
   }
 };
