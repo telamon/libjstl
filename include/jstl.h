@@ -139,6 +139,8 @@ struct js_receiver_t : js_handle_t {
   js_receiver_t() : js_handle_t() {}
 
   js_receiver_t(js_value_t *value) : js_handle_t(value) {}
+
+  js_receiver_t(const js_handle_t &value) : js_handle_t(value) {}
 };
 
 template <typename T>
