@@ -8,13 +8,16 @@ list(APPEND tests
   create-function-return-int64
   create-function-return-string
   create-function-return-uint8array
+  create-function-return-uint16array
   create-function-return-uint32
+  create-function-return-vector-int32
   create-function-return-void
   create-function-return-void-arg-bool
   create-function-return-void-arg-double
   create-function-return-void-arg-int32
   create-function-return-void-arg-int64
   create-function-return-void-arg-uint8array
+  create-function-return-void-arg-uint16array
   create-function-return-void-arg-uint32
   create-function-return-void-arg-vector-int32
   set-get-property-literal-int32
