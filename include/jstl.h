@@ -512,8 +512,11 @@ struct js_type_info_t<std::array<T, N>> {
     int err;
 
     js_value_t *values[N];
-    err = js_get_array_elements(env, value, values, N, 0, nullptr);
+    uint32_t len;
+    err = js_get_array_elements(env, value, values, N, 0, &len);
     if (err < 0) return err;
+
+    assert(len == N);
 
     for (uint32_t i = 0; i < N; i++) {
       err = js_type_info_t<T>::unmarshall(env, values[i], result[i]);
@@ -561,7 +564,7 @@ struct js_type_info_t<std::vector<T>> {
     if (err < 0) return err;
 
     std::vector<js_value_t *> values(len);
-    err = js_get_array_elements(env, value, values.data(), len, 0, nullptr);
+    err = js_get_array_elements(env, value, values.data(), len, 0, &len);
     if (err < 0) return err;
 
     result.resize(len);
