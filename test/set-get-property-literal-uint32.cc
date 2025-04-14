@@ -4,9 +4,6 @@
 
 #include "../include/jstl.h"
 
-void
-on_call(js_env_t *, js_receiver_t) {}
-
 int
 main() {
   int e;

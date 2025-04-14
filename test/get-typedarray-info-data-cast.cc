@@ -4,6 +4,11 @@
 
 #include "../include/jstl.h"
 
+struct data {
+  int32_t foo;
+  bool bar;
+};
+
 int
 main() {
   int e;
@@ -22,18 +27,16 @@ main() {
   e = js_open_handle_scope(env, &scope);
   assert(e == 0);
 
-  js_object_t object;
-  e = js_create_object(env, object);
+  js_typedarray_t<uint8_t> typedarray;
+  e = js_create_typedarray(env, sizeof(data), typedarray);
   assert(e == 0);
 
-  e = js_set_property(env, object, "foo", int32_t(-42));
+  data *data;
+  e = js_get_typedarray_info(env, typedarray, data);
   assert(e == 0);
 
-  int32_t value;
-  e = js_get_property(env, object, "foo", value);
-  assert(e == 0);
-
-  assert(value == -42);
+  data->foo = 42;
+  data->bar = true;
 
   e = js_close_handle_scope(env, scope);
   assert(e == 0);
