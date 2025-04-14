@@ -562,6 +562,89 @@ struct js_type_info_t<std::vector<T>> {
 };
 
 template <typename T>
+struct js_typedarray_info_t {};
+
+template <>
+struct js_typedarray_info_t<int8_t> {
+  constexpr static auto
+  type() {
+    return js_int8array;
+  }
+};
+
+template <>
+struct js_typedarray_info_t<uint8_t> {
+  constexpr static auto
+  type() {
+    return js_uint8array;
+  }
+};
+
+template <>
+struct js_typedarray_info_t<int16_t> {
+  constexpr static auto
+  type() {
+    return js_int16array;
+  }
+};
+
+template <>
+struct js_typedarray_info_t<uint16_t> {
+  constexpr static auto
+  type() {
+    return js_uint16array;
+  }
+};
+
+template <>
+struct js_typedarray_info_t<int32_t> {
+  constexpr static auto
+  type() {
+    return js_int32array;
+  }
+};
+
+template <>
+struct js_typedarray_info_t<uint32_t> {
+  constexpr static auto
+  type() {
+    return js_uint32array;
+  }
+};
+
+template <>
+struct js_typedarray_info_t<int64_t> {
+  constexpr static auto
+  type() {
+    return js_bigint64array;
+  }
+};
+
+template <>
+struct js_typedarray_info_t<uint64_t> {
+  constexpr static auto
+  type() {
+    return js_biguint64array;
+  }
+};
+
+template <>
+struct js_typedarray_info_t<float> {
+  constexpr static auto
+  type() {
+    return js_float32array;
+  }
+};
+
+template <>
+struct js_typedarray_info_t<double> {
+  constexpr static auto
+  type() {
+    return js_float64array;
+  }
+};
+
+template <typename T>
 constexpr auto
 js_marshall_typed_value(js_env_t *env, T value) {
   int err;
@@ -851,33 +934,7 @@ js_create_arraybuffer(js_env_t *env, size_t len, std::span<T> &view, js_arraybuf
 template <typename T>
 constexpr auto
 js_create_typedarray(js_env_t *env, size_t len, const js_arraybuffer_t &arraybuffer, size_t offset, js_typedarray_t<T> &result) {
-  js_typedarray_type_t type;
-
-  if constexpr (std::is_same<T, int8_t>()) {
-    type = js_int8array;
-  } else if constexpr (std::is_same<T, uint8_t>()) {
-    type = js_uint8array;
-  } else if constexpr (std::is_same<T, int16_t>()) {
-    type = js_int16array;
-  } else if constexpr (std::is_same<T, uint16_t>()) {
-    type = js_uint16array;
-  } else if constexpr (std::is_same<T, int32_t>()) {
-    type = js_int32array;
-  } else if constexpr (std::is_same<T, uint32_t>()) {
-    type = js_uint32array;
-  } else if constexpr (std::is_same<T, float>()) {
-    type = js_float32array;
-  } else if constexpr (std::is_same<T, double>()) {
-    type = js_float64array;
-  } else if constexpr (std::is_same<T, int64_t>()) {
-    type = js_bigint64array;
-  } else if constexpr (std::is_same<T, uint64_t>()) {
-    type = js_biguint64array;
-  } else {
-    static_assert(false, "Unsupported typed array element type");
-  }
-
-  return js_create_typedarray(env, type, len, arraybuffer.value, offset, &result.value);
+  return js_create_typedarray(env, js_typedarray_info_t<T>::type(), len, arraybuffer.value, offset, &result.value);
 }
 
 template <typename T>
