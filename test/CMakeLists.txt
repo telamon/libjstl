@@ -16,6 +16,8 @@ list(APPEND tests
   create-function-return-void-arg-int64
   create-function-return-void-arg-uint8array
   create-function-return-void-arg-uint32
+  create-function-return-void-arg-vector-int32
+  set-get-property-literal-int32
 )
 
 foreach(test IN LISTS tests)

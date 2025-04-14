@@ -4,6 +4,7 @@
 #include <string>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 #include <js.h>
 #include <stdbool.h>
@@ -418,6 +419,148 @@ struct js_type_info_t<js_receiver_t> {
   }
 };
 
+template <size_t N>
+struct js_type_info_t<char[N]> {
+  using type = js_value_t *;
+
+  static constexpr auto
+  signature() {
+    return js_string;
+  }
+
+  static constexpr auto
+  marshall(js_env_t *env, const char value[N], js_value_t *&result) {
+    return js_create_string_utf8(env, (const utf8_t *) value, N, &result);
+  }
+
+  static constexpr auto
+  unmarshall(js_env_t *env, js_value_t *value, const char result[N]) {
+    return js_get_value_string_utf8(env, value, (utf8_t *) result, N, nullptr);
+  }
+};
+
+template <>
+struct js_type_info_t<std::string> {
+  using type = js_value_t *;
+
+  static constexpr auto
+  signature() {
+    return js_string;
+  }
+
+  static constexpr auto
+  marshall(js_env_t *env, const std::string &value, js_value_t *&result) {
+    return js_create_string_utf8(env, (const utf8_t *) value.data(), value.length(), &result);
+  }
+
+  static auto
+  unmarshall(js_env_t *env, js_value_t *value, std::string &result) {
+    int err;
+
+    size_t len;
+    err = js_get_value_string_utf8(env, value, nullptr, 0, &len);
+    if (err < 0) return err;
+
+    result.resize(len);
+
+    return js_get_value_string_utf8(env, value, (utf8_t *) result.data(), result.length(), nullptr);
+  }
+};
+
+template <typename T, size_t N>
+struct js_type_info_t<std::array<T, N>> {
+  using type = js_value_t *;
+
+  static constexpr auto
+  signature() {
+    return js_object;
+  }
+
+  static constexpr auto
+  marshall(js_env_t *env, const std::array<T, N> &array, js_value_t *&result) {
+    int err;
+
+    err = js_create_array_with_length(env, N, &result);
+    assert(err == 0);
+
+    js_value_t *values[N];
+
+    for (uint32_t i = 0; i < N; i++) {
+      err = js_type_info_t<T>::marshall(env, array[i], values[i]);
+      if (err < 0) return err;
+    }
+
+    return js_set_array_elements(env, result, (const js_value_t **) values, N, 0);
+  }
+
+  static auto
+  unmarshall(js_env_t *env, js_value_t *value, std::array<T, N> &result) {
+    int err;
+
+    js_value_t *values[N];
+    err = js_get_array_elements(env, value, values, N, 0, nullptr);
+    if (err < 0) return err;
+
+    for (uint32_t i = 0; i < N; i++) {
+      err = js_type_info_t<T>::unmarshall(env, values[i], result[i]);
+      if (err < 0) return err;
+    }
+
+    return 0;
+  }
+};
+
+template <typename T>
+struct js_type_info_t<std::vector<T>> {
+  using type = js_value_t *;
+
+  static constexpr auto
+  signature() {
+    return js_object;
+  }
+
+  static constexpr auto
+  marshall(js_env_t *env, const std::vector<T> &vector, js_value_t *&result) {
+    int err;
+
+    auto len = vector.size();
+
+    err = js_create_array_with_length(env, len, &result);
+    assert(err == 0);
+
+    std::vector<js_value_t *> values(len);
+
+    for (uint32_t i = 0; i < len; i++) {
+      err = js_type_info_t<T>::marshall(env, vector[i], values[i]);
+      if (err < 0) return err;
+    }
+
+    return js_set_array_elements(env, result, (const js_value_t **) values.data(), len, 0);
+  }
+
+  static auto
+  unmarshall(js_env_t *env, js_value_t *value, std::vector<T> &result) {
+    int err;
+
+    uint32_t len;
+    err = js_get_array_length(env, value, &len);
+    if (err < 0) return err;
+
+    std::vector<js_value_t *> values(len);
+    err = js_get_array_elements(env, value, values.data(), len, 0, nullptr);
+    if (err < 0) return err;
+
+    result.resize(len);
+
+    for (uint32_t i = 0; i < len; i++) {
+      err = js_type_info_t<T>::unmarshall(env, values[i], result[i]);
+      if (err < 0) return err;
+    }
+
+    return 0;
+  }
+};
+
 template <typename T>
 constexpr auto
 js_marshall_typed_value(js_env_t *env, T value) {
@@ -652,14 +795,20 @@ js_create_object(js_env_t *env, js_object_t &result) {
   return js_create_object(env, &result.value);
 }
 
+template <size_t N>
 constexpr auto
-js_create_string(js_env_t *env, const utf8_t *str, size_t len, js_string_t &result) {
-  return js_create_string_utf8(env, str, len, &result.value);
+js_create_string(js_env_t *env, const char value[N], js_string_t &result) {
+  return js_create_string_utf8(env, value, N, &result.value);
 }
 
 constexpr auto
-js_create_string(js_env_t *env, const std::string &str, js_string_t &result) {
-  return js_create_string_utf8(env, (const utf8_t *) str.data(), str.length(), &result.value);
+js_create_string(js_env_t *env, const utf8_t *value, size_t len, js_string_t &result) {
+  return js_create_string_utf8(env, value, len, &result.value);
+}
+
+constexpr auto
+js_create_string(js_env_t *env, const std::string &value, js_string_t &result) {
+  return js_create_string_utf8(env, (const utf8_t *) value.data(), value.length(), &result.value);
 }
 
 template <typename T>
