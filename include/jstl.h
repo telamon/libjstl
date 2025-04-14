@@ -59,6 +59,12 @@ struct js_integer_t : js_number_t {
   js_integer_t(js_value_t *value) : js_number_t(value) {}
 };
 
+struct js_bigint_t : js_numeric_t {
+  js_bigint_t() : js_numeric_t() {}
+
+  js_bigint_t(js_value_t *value) : js_numeric_t(value) {}
+};
+
 struct js_name_t : js_primitive_t {
   js_name_t() : js_primitive_t() {}
 
