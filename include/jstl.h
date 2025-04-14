@@ -459,7 +459,7 @@ struct js_type_info_t<js_receiver_t> {
 
 template <typename T>
 struct js_type_info_t<T *> {
-  using type = js_value_t *;
+  using type = T *;
 
   static constexpr auto
   signature() {
@@ -467,8 +467,22 @@ struct js_type_info_t<T *> {
   }
 
   static constexpr auto
-  marshall(js_env_t *env, const T *&external, js_value_t *&result) {
-    return js_create_external(env, (void *) external, nullptr, nullptr, &result);
+  marshall(js_env_t *env, const T *&value, T *&result) {
+    result = value;
+
+    return 0;
+  }
+
+  static constexpr auto
+  marshall(js_env_t *env, const T *&value, js_value_t *&result) {
+    return js_create_external(env, (void *) value, nullptr, nullptr, &result);
+  }
+
+  static auto
+  unmarshall(js_env_t *env, const T *value, T *&result) {
+    result = value;
+
+    return 0;
   }
 
   static auto
