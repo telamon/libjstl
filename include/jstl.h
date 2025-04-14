@@ -1064,6 +1064,18 @@ js_create_typedarray(js_env_t *env, size_t len, js_typedarray_t<T> &result) {
 
 template <typename T>
 constexpr auto
+js_create_typedarray(js_env_t *env, T *&data, js_typedarray_t<uint8_t> &result) {
+  int err;
+
+  js_arraybuffer_t arraybuffer;
+  err = js_create_arraybuffer(env, data, arraybuffer);
+  if (err < 0) return err;
+
+  return js_create_typedarray(env, sizeof(T), arraybuffer, result);
+}
+
+template <typename T>
+constexpr auto
 js_get_arraybuffer_info(js_env_t *env, const js_arraybuffer_t &arraybuffer, T *&data, size_t &len) {
   int err;
   err = js_get_arraybuffer_info(env, arraybuffer.value, (void **) &data, &len);
