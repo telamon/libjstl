@@ -1496,6 +1496,9 @@ template <typename T>
 constexpr auto
 js_reset_reference(js_env_t *env, js_persistent_t<T> &reference) {
   int err;
+
+  if (reference.ref == nullptr) return 0;
+
   err = js_delete_reference(env, reference.ref);
   if (err < 0) return err;
 
