@@ -760,7 +760,7 @@ struct js_function_info_t<fn> {
     err = js_create_function<fn, R, A...>(env, name, value);
     if (err < 0) return err;
 
-    result = value;
+    result = std::move(value);
 
     return 0;
   }
@@ -773,7 +773,7 @@ struct js_function_info_t<fn> {
     err = js_create_function<fn, R, A...>(env, value);
     if (err < 0) return err;
 
-    result = value;
+    result = std::move(value);
 
     return 0;
   }
