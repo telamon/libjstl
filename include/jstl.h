@@ -753,6 +753,19 @@ struct js_function_info_t<fn> {
   using arguments = std::tuple<A...>;
 
   static constexpr auto
+  marshall(js_env_t *env, const char *name, size_t len, js_value_t *&result) {
+    int err;
+
+    js_function_t<R, A...> value;
+    err = js_create_function<fn, R, A...>(env, name, len, value);
+    if (err < 0) return err;
+
+    result = value;
+
+    return 0;
+  }
+
+  static constexpr auto
   marshall(js_env_t *env, const char *name, js_value_t *&result) {
     int err;
 
@@ -934,6 +947,24 @@ template <auto fn, typename R, typename... A>
 constexpr auto
 js_create_function(js_env_t *env, js_function_t<R, A...> &result) {
   return js_create_function<fn, R, A...>(env, nullptr, 0, result);
+}
+
+template <auto fn>
+constexpr auto
+js_create_function(js_env_t *env, const char *name, size_t len, js_handle_t &result) {
+  return js_function_info_t<fn>::marshall(env, name, len, result.value);
+}
+
+template <auto fn>
+constexpr auto
+js_create_function(js_env_t *env, std::string name, js_handle_t &result) {
+  return js_function_info_t<fn>::marshall(env, name.data(), name.length(), result.value);
+}
+
+template <auto fn>
+constexpr auto
+js_create_function(js_env_t *env, js_handle_t &result) {
+  return js_function_info_t<fn>::marshall(env, result.value);
 }
 
 template <typename... A>
