@@ -753,7 +753,7 @@ struct js_function_info_t<fn> {
   using arguments = std::tuple<A...>;
 
   static constexpr auto
-  create(js_env_t *env, const char *name, js_handle_t &result) {
+  marshall(js_env_t *env, const char *name, js_handle_t &result) {
     int err;
 
     js_function_t<R, A...> value;
@@ -766,7 +766,7 @@ struct js_function_info_t<fn> {
   }
 
   static constexpr auto
-  create(js_env_t *env, js_handle_t &result) {
+  marshall(js_env_t *env, js_handle_t &result) {
     int err;
 
     js_function_t<R, A...> value;
@@ -1312,7 +1312,7 @@ js_set_property(js_env_t *env, const js_object_t &object, const char *name) {
   int err;
 
   js_handle_t value;
-  err = js_function_info_t<fn>::create(env, name, value);
+  err = js_function_info_t<fn>::marshall(env, name, value);
   if (err < 0) return err;
 
   return js_set_property(env, object, name, value);
@@ -1358,7 +1358,7 @@ js_set_element(js_env_t *env, const js_object_t &object, uint32_t index) {
   int err;
 
   js_handle_t value;
-  err = js_function_info_t<fn>::create(env, value);
+  err = js_function_info_t<fn>::marshall(env, value);
   if (err < 0) return err;
 
   return js_set_element(env, object, index, value);
