@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <span>
 #include <string>
 #include <type_traits>
@@ -147,6 +148,29 @@ struct js_receiver_t : js_handle_t {
   js_receiver_t(js_value_t *value) : js_handle_t(value) {}
 
   js_receiver_t(const js_handle_t &value) : js_handle_t(value) {}
+};
+
+template <typename T>
+struct js_persistent_t {
+  js_env_t *env;
+  js_ref_t *ref;
+
+  js_persistent_t() : env(nullptr), ref(nullptr) {}
+
+  js_persistent_t(js_persistent_t &&that) : env(that.env), ref(std::exchange(that.ref, nullptr)) {}
+
+  js_persistent_t(const js_persistent_t &) = delete;
+
+  ~js_persistent_t() {
+    if (ref == nullptr) return;
+
+    int err;
+    err = js_delete_reference(env, ref);
+    assert(err == 0);
+  }
+
+  void
+  operator=(const js_persistent_t &) = delete;
 };
 
 template <typename T>
@@ -1420,4 +1444,62 @@ js_run_script(js_env_t *env, const std::string &file, int offset, const js_strin
 constexpr auto
 js_run_script(js_env_t *env, const js_string_t &source, js_handle_t &result) {
   return js_run_script(env, nullptr, 0, 0, source.value, &result.value);
+}
+
+template <typename T>
+constexpr auto
+js_create_reference(js_env_t *env, const T &value, js_persistent_t<T> &result) {
+  result.env = env;
+
+  return js_create_reference(env, value.value, 1, &result.ref);
+}
+
+template <typename T>
+constexpr auto
+js_create_weak_reference(js_env_t *env, const T &value, js_persistent_t<T> &result) {
+  result.env = env;
+
+  return js_create_reference(env, value.value, 0, &result.ref);
+}
+
+template <typename T>
+constexpr auto
+js_get_reference_value(js_env_t *env, const js_persistent_t<T> &reference, T &result) {
+  int err;
+
+  js_value_t *value;
+  err = js_get_reference_value(env, reference.ref, &value);
+  if (err < 0) return err;
+
+  assert(value != nullptr);
+
+  result = T(value);
+
+  return 0;
+}
+
+template <typename T>
+constexpr auto
+js_get_reference_value(js_env_t *env, const js_persistent_t<T> &reference, std::optional<T> &result) {
+  int err;
+
+  js_value_t *value;
+  err = js_get_reference_value(env, reference.ref, &value);
+  if (err < 0) return err;
+
+  result = value == nullptr ? std::nullopt : std::optional(T(value));
+
+  return 0;
+}
+
+template <typename T>
+constexpr auto
+js_reset_reference(js_env_t *env, js_persistent_t<T> &reference) {
+  int err;
+  err = js_delete_reference(env, reference.ref);
+  if (err < 0) return err;
+
+  reference.ref = nullptr;
+
+  return 0;
 }

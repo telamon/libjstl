@@ -26,6 +26,9 @@ list(APPEND tests
   create-function-return-void-arg-uint16array
   create-function-return-void-arg-uint32
   create-function-return-void-arg-vector-int32
+  create-reference-get-value
+  create-reference-get-value-optional
+  create-reference-move-assign
   create-typedarray-data-cast
   get-typedarray-info-data-cast
   set-get-property-literal-function-pointer
