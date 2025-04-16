@@ -753,27 +753,27 @@ struct js_function_info_t<fn> {
   using arguments = std::tuple<A...>;
 
   static constexpr auto
-  marshall(js_env_t *env, const char *name, js_handle_t &result) {
+  marshall(js_env_t *env, const char *name, js_value_t *&result) {
     int err;
 
     js_function_t<R, A...> value;
     err = js_create_function<fn, R, A...>(env, name, value);
     if (err < 0) return err;
 
-    result = std::move(value);
+    result = value;
 
     return 0;
   }
 
   static constexpr auto
-  marshall(js_env_t *env, js_handle_t &result) {
+  marshall(js_env_t *env, js_value_t *&result) {
     int err;
 
     js_function_t<R, A...> value;
     err = js_create_function<fn, R, A...>(env, value);
     if (err < 0) return err;
 
-    result = std::move(value);
+    result = value;
 
     return 0;
   }
@@ -1308,14 +1308,26 @@ js_set_property(js_env_t *env, const js_object_t &object, const char *name, cons
 
 template <auto fn>
 constexpr auto
+js_set_property(js_env_t *env, const js_object_t &object, const js_name_t &name) {
+  int err;
+
+  js_value_t *marshalled;
+  err = js_function_info_t<fn>::marshall(env, marshalled);
+  if (err < 0) return err;
+
+  return js_set_property(env, object.value, name.value, marshalled);
+}
+
+template <auto fn>
+constexpr auto
 js_set_property(js_env_t *env, const js_object_t &object, const char *name) {
   int err;
 
-  js_handle_t value;
-  err = js_function_info_t<fn>::marshall(env, name, value);
+  js_value_t *marshalled;
+  err = js_function_info_t<fn>::marshall(env, name, marshalled);
   if (err < 0) return err;
 
-  return js_set_property(env, object, name, value);
+  return js_set_named_property(env, object.value, name, marshalled);
 }
 
 constexpr auto
@@ -1357,11 +1369,11 @@ constexpr auto
 js_set_element(js_env_t *env, const js_object_t &object, uint32_t index) {
   int err;
 
-  js_handle_t value;
-  err = js_function_info_t<fn>::marshall(env, value);
+  js_value_t *marshalled;
+  err = js_function_info_t<fn>::marshall(env, marshalled);
   if (err < 0) return err;
 
-  return js_set_element(env, object, index, value);
+  return js_set_element(env, object.value, index, marshalled);
 }
 
 constexpr auto
