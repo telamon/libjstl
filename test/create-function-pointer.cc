@@ -5,7 +5,7 @@
 #include "../include/jstl.h"
 
 void
-on_call(js_env_t *, js_receiver_t) {}
+on_call(js_env_t *) {}
 
 int
 main() {
@@ -27,10 +27,6 @@ main() {
 
   js_handle_t fn;
   e = js_create_function<on_call>(env, fn);
-  assert(e == 0);
-
-  js_receiver_t receiver;
-  e = js_get_global(env, receiver);
   assert(e == 0);
 
   e = js_close_handle_scope(env, scope);
