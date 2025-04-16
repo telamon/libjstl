@@ -27,6 +27,7 @@ list(APPEND tests
   create-function-return-void-arg-vector-int32
   create-typedarray-data-cast
   get-typedarray-info-data-cast
+  set-get-property-literal-function-pointer
   set-get-property-literal-int32
   set-get-property-literal-uint32
 )

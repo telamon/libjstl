@@ -409,6 +409,23 @@ struct js_type_info_t<js_typedarray_t<T>> {
   }
 };
 
+template <typename R, typename... A>
+struct js_type_info_t<js_function_t<R, A...>> {
+  using type = js_value_t *;
+
+  static constexpr auto
+  signature() {
+    return js_function;
+  }
+
+  static auto
+  unmarshall(js_env_t *env, js_value_t *value, js_function_t<R, A...> &result) {
+    result = js_function_t<R, A...>(value);
+
+    return 0;
+  }
+};
+
 template <>
 struct js_type_info_t<js_external_t> {
   using type = js_value_t *;
@@ -724,6 +741,41 @@ struct js_typedarray_info_t<double> {
   constexpr static auto
   type() {
     return js_float64array;
+  }
+};
+
+template <auto fn>
+struct js_function_info_t;
+
+template <typename R, typename... A, R (*fn)(js_env_t *, A...)>
+struct js_function_info_t<fn> {
+  using result = R;
+  using arguments = std::tuple<A...>;
+
+  static constexpr auto
+  create(js_env_t *env, const char *name, js_handle_t &result) {
+    int err;
+
+    js_function_t<R, A...> value;
+    err = js_create_function<fn, R, A...>(env, name, value);
+    if (err < 0) return err;
+
+    result = value;
+
+    return 0;
+  }
+
+  static constexpr auto
+  create(js_env_t *env, js_handle_t &result) {
+    int err;
+
+    js_function_t<R, A...> value;
+    err = js_create_function<fn, R, A...>(env, value);
+    if (err < 0) return err;
+
+    result = value;
+
+    return 0;
   }
 };
 
@@ -1254,6 +1306,18 @@ js_set_property(js_env_t *env, const js_object_t &object, const char *name, cons
   return js_set_named_property(env, object.value, name, marshalled);
 }
 
+template <auto fn>
+constexpr auto
+js_set_property(js_env_t *env, const js_object_t &object, const char *name) {
+  int err;
+
+  js_handle_t value;
+  err = js_function_info_t<fn>::create(env, name, value);
+  if (err < 0) return err;
+
+  return js_set_property(env, object, name, value);
+}
+
 constexpr auto
 js_get_element(js_env_t *env, const js_object_t &object, uint32_t index, js_handle_t &result) {
   return js_get_element(env, object.value, index, &result.value);
@@ -1286,6 +1350,18 @@ js_set_element(js_env_t *env, const js_object_t &object, uint32_t index, const T
   if (err < 0) return err;
 
   return js_set_element(env, object.value, index, marshalled);
+}
+
+template <auto fn>
+constexpr auto
+js_set_element(js_env_t *env, const js_object_t &object, uint32_t index) {
+  int err;
+
+  js_handle_t value;
+  err = js_function_info_t<fn>::create(env, value);
+  if (err < 0) return err;
+
+  return js_set_element(env, object, index, value);
 }
 
 constexpr auto
