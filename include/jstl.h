@@ -747,7 +747,7 @@ struct js_typedarray_info_t<double> {
 template <auto fn>
 struct js_function_info_t;
 
-template <typename R, typename... A, R (*fn)(js_env_t *, A...)>
+template <typename R, typename... A, R fn(js_env_t *, A...)>
 struct js_function_info_t<fn> {
   using result = R;
   using arguments = std::tuple<A...>;
