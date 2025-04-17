@@ -204,12 +204,12 @@ template <>
 struct js_type_info_t<void> {
   using type = void;
 
-  static inline auto
+  static auto
   signature() {
     return js_undefined;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *env, js_value_t *&result) {
     return js_get_undefined(env, &result);
   }
@@ -219,31 +219,31 @@ template <>
 struct js_type_info_t<bool> {
   using type = bool;
 
-  static inline auto
+  static auto
   signature() {
     return js_boolean;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *, bool value, bool &result) {
     result = value;
 
     return 0;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *env, bool value, js_value_t *&result) {
     return js_get_boolean(env, value, &result);
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *, bool value, bool &result) {
     result = value;
 
     return 0;
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *env, js_value_t *value, bool &result) {
     return js_get_value_bool(env, value, &result);
   }
@@ -253,31 +253,31 @@ template <>
 struct js_type_info_t<int32_t> {
   using type = int32_t;
 
-  static inline auto
+  static auto
   signature() {
     return js_int32;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *, int32_t value, int32_t &result) {
     result = value;
 
     return 0;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *env, int32_t value, js_value_t *&result) {
     return js_create_int32(env, value, &result);
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *, int32_t value, int32_t &result) {
     result = value;
 
     return 0;
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *env, js_value_t *value, int32_t &result) {
     return js_get_value_int32(env, value, &result);
   }
@@ -287,31 +287,31 @@ template <>
 struct js_type_info_t<uint32_t> {
   using type = uint32_t;
 
-  static inline auto
+  static auto
   signature() {
     return js_uint32;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *, uint32_t value, uint32_t &result) {
     result = value;
 
     return 0;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *env, uint32_t value, js_value_t *&result) {
     return js_create_uint32(env, value, &result);
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *env, uint32_t value, uint32_t &result) {
     result = value;
 
     return 0;
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *env, js_value_t *value, uint32_t &result) {
     return js_get_value_uint32(env, value, &result);
   }
@@ -321,31 +321,31 @@ template <>
 struct js_type_info_t<int64_t> {
   using type = int64_t;
 
-  static inline auto
+  static auto
   signature() {
     return js_int64;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *, int64_t value, int64_t &result) {
     result = value;
 
     return 0;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *env, int64_t value, js_value_t *&result) {
     return js_create_int64(env, value, &result);
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *, int64_t value, int64_t &result) {
     result = value;
 
     return 0;
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *env, js_value_t *value, int64_t &result) {
     return js_get_value_int64(env, value, &result);
   }
@@ -355,31 +355,31 @@ template <>
 struct js_type_info_t<double> {
   using type = double;
 
-  static inline auto
+  static auto
   signature() {
     return js_float64;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *, double value, double &result) {
     result = value;
 
     return 0;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *env, double value, js_value_t *&result) {
     return js_create_double(env, value, &result);
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *, double value, double &result) {
     result = value;
 
     return 0;
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *env, js_value_t *value, double &result) {
     return js_get_value_double(env, value, &result);
   }
@@ -389,19 +389,19 @@ template <>
 struct js_type_info_t<js_string_t> {
   using type = js_value_t *;
 
-  static inline auto
+  static auto
   signature() {
     return js_string;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *env, const js_string_t &string, js_value_t *&result) {
     result = string.value;
 
     return 0;
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *env, js_value_t *value, js_string_t &result) {
     result = js_string_t(value);
 
@@ -413,19 +413,19 @@ template <>
 struct js_type_info_t<js_arraybuffer_t> {
   using type = js_value_t *;
 
-  static inline auto
+  static auto
   signature() {
     return js_object;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *env, const js_arraybuffer_t &arraybuffer, js_value_t *&result) {
     result = arraybuffer.value;
 
     return 0;
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *env, js_value_t *value, js_arraybuffer_t &result) {
     result = js_arraybuffer_t(value);
 
@@ -437,19 +437,19 @@ template <typename T>
 struct js_type_info_t<js_typedarray_t<T>> {
   using type = js_value_t *;
 
-  static inline auto
+  static auto
   signature() {
     return js_object;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *env, const js_typedarray_t<T> &typedarray, js_value_t *&result) {
     result = typedarray.value;
 
     return 0;
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *env, js_value_t *value, js_typedarray_t<T> &result) {
     result = js_typedarray_t<T>(value);
 
@@ -461,12 +461,12 @@ template <typename R, typename... A>
 struct js_type_info_t<js_function_t<R, A...>> {
   using type = js_value_t *;
 
-  static inline auto
+  static auto
   signature() {
     return js_function;
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *env, js_value_t *value, js_function_t<R, A...> &result) {
     result = js_function_t<R, A...>(value);
 
@@ -478,19 +478,19 @@ template <>
 struct js_type_info_t<js_external_t> {
   using type = js_value_t *;
 
-  static inline auto
+  static auto
   signature() {
     return js_external;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *env, const js_external_t &external, js_value_t *&result) {
     result = external.value;
 
     return 0;
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *env, js_value_t *value, js_external_t &result) {
     result = js_external_t(value);
 
@@ -502,19 +502,19 @@ template <>
 struct js_type_info_t<js_receiver_t> {
   using type = js_value_t *;
 
-  static inline auto
+  static auto
   signature() {
     return js_object;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *, const js_receiver_t &receiver, js_value_t *&result) {
     result = receiver.value;
 
     return 0;
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *, js_value_t *value, js_receiver_t &result) {
     result = js_receiver_t(value);
 
@@ -526,31 +526,31 @@ template <typename T>
 struct js_type_info_t<T *> {
   using type = T *;
 
-  static inline auto
+  static auto
   signature() {
     return js_external;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *env, const T *&value, T *&result) {
     result = value;
 
     return 0;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *env, const T *&value, js_value_t *&result) {
     return js_create_external(env, (void *) value, nullptr, nullptr, &result);
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *env, const T *value, T *&result) {
     result = value;
 
     return 0;
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *env, js_value_t *value, T *&result) {
     return js_get_value_external(env, value, (void **) &result);
   }
@@ -560,17 +560,17 @@ template <size_t N>
 struct js_type_info_t<char[N]> {
   using type = js_value_t *;
 
-  static inline auto
+  static auto
   signature() {
     return js_string;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *env, const char value[N], js_value_t *&result) {
     return js_create_string_utf8(env, (const utf8_t *) value, N, &result);
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *env, js_value_t *value, char result[N]) {
     int err;
 
@@ -588,17 +588,17 @@ template <>
 struct js_type_info_t<std::string> {
   using type = js_value_t *;
 
-  static inline auto
+  static auto
   signature() {
     return js_string;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *env, const std::string &value, js_value_t *&result) {
     return js_create_string_utf8(env, (const utf8_t *) value.data(), value.length(), &result);
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *env, js_value_t *value, std::string &result) {
     int err;
 
@@ -616,12 +616,12 @@ template <typename T, size_t N>
 struct js_type_info_t<std::array<T, N>> {
   using type = js_value_t *;
 
-  static inline auto
+  static auto
   signature() {
     return js_object;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *env, const std::array<T, N> &array, js_value_t *&result) {
     int err;
 
@@ -638,7 +638,7 @@ struct js_type_info_t<std::array<T, N>> {
     return js_set_array_elements(env, result, (const js_value_t **) values, N, 0);
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *env, js_value_t *value, std::array<T, N> &result) {
     int err;
 
@@ -662,12 +662,12 @@ template <typename T>
 struct js_type_info_t<std::vector<T>> {
   using type = js_value_t *;
 
-  static inline auto
+  static auto
   signature() {
     return js_object;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *env, const std::vector<T> &vector, js_value_t *&result) {
     int err;
 
@@ -686,7 +686,7 @@ struct js_type_info_t<std::vector<T>> {
     return js_set_array_elements(env, result, (const js_value_t **) values.data(), len, 0);
   }
 
-  static inline auto
+  static auto
   unmarshall(js_env_t *env, js_value_t *value, std::vector<T> &result) {
     int err;
 
@@ -714,7 +714,7 @@ struct js_typedarray_info_t {};
 
 template <>
 struct js_typedarray_info_t<int8_t> {
-  static inline auto
+  static auto
   type() {
     return js_int8array;
   }
@@ -722,7 +722,7 @@ struct js_typedarray_info_t<int8_t> {
 
 template <>
 struct js_typedarray_info_t<uint8_t> {
-  static inline auto
+  static auto
   type() {
     return js_uint8array;
   }
@@ -730,7 +730,7 @@ struct js_typedarray_info_t<uint8_t> {
 
 template <>
 struct js_typedarray_info_t<int16_t> {
-  static inline auto
+  static auto
   type() {
     return js_int16array;
   }
@@ -738,7 +738,7 @@ struct js_typedarray_info_t<int16_t> {
 
 template <>
 struct js_typedarray_info_t<uint16_t> {
-  static inline auto
+  static auto
   type() {
     return js_uint16array;
   }
@@ -746,7 +746,7 @@ struct js_typedarray_info_t<uint16_t> {
 
 template <>
 struct js_typedarray_info_t<int32_t> {
-  static inline auto
+  static auto
   type() {
     return js_int32array;
   }
@@ -754,7 +754,7 @@ struct js_typedarray_info_t<int32_t> {
 
 template <>
 struct js_typedarray_info_t<uint32_t> {
-  static inline auto
+  static auto
   type() {
     return js_uint32array;
   }
@@ -762,7 +762,7 @@ struct js_typedarray_info_t<uint32_t> {
 
 template <>
 struct js_typedarray_info_t<int64_t> {
-  static inline auto
+  static auto
   type() {
     return js_bigint64array;
   }
@@ -770,7 +770,7 @@ struct js_typedarray_info_t<int64_t> {
 
 template <>
 struct js_typedarray_info_t<uint64_t> {
-  static inline auto
+  static auto
   type() {
     return js_biguint64array;
   }
@@ -778,7 +778,7 @@ struct js_typedarray_info_t<uint64_t> {
 
 template <>
 struct js_typedarray_info_t<float> {
-  static inline auto
+  static auto
   type() {
     return js_float32array;
   }
@@ -786,7 +786,7 @@ struct js_typedarray_info_t<float> {
 
 template <>
 struct js_typedarray_info_t<double> {
-  static inline auto
+  static auto
   type() {
     return js_float64array;
   }
@@ -800,7 +800,7 @@ struct js_function_info_t<fn> {
   using result = R;
   using arguments = std::tuple<A...>;
 
-  static inline auto
+  static auto
   marshall(js_env_t *env, const char *name, size_t len, js_value_t *&result) {
     int err;
 
@@ -813,7 +813,7 @@ struct js_function_info_t<fn> {
     return 0;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *env, const char *name, js_value_t *&result) {
     int err;
 
@@ -826,7 +826,7 @@ struct js_function_info_t<fn> {
     return 0;
   }
 
-  static inline auto
+  static auto
   marshall(js_env_t *env, js_value_t *&result) {
     int err;
 
