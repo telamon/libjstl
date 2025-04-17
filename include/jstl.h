@@ -21,11 +21,11 @@ struct js_handle_t {
 
   virtual ~js_handle_t() = default;
 
-  constexpr operator js_value_t *() const {
+  operator js_value_t *() const {
     return value;
   }
 
-  constexpr operator js_value_t **() {
+  operator js_value_t **() {
     return &value;
   }
 };
@@ -85,12 +85,24 @@ struct js_string_t : js_name_t {
 
   js_string_t(js_value_t *value) : js_name_t(value), view(nullptr) {}
 
+  js_string_t(const js_string_t &that) : js_name_t(that.value), view(nullptr) {}
+
   ~js_string_t() {
     if (view == nullptr) return;
 
     int err;
     err = js_release_string_view(nullptr, view);
     assert(err == 0);
+  }
+
+  void
+  operator=(const js_string_t &that) {
+    if (this == &that) return;
+
+    this->~js_string_t();
+
+    value = that.value;
+    view = nullptr;
   }
 };
 
@@ -120,12 +132,24 @@ struct js_typedarray_t : js_object_t {
 
   js_typedarray_t(js_value_t *value) : js_object_t(value), view(nullptr) {}
 
+  js_typedarray_t(const js_typedarray_t &that) : js_object_t(that.value), view(nullptr) {}
+
   ~js_typedarray_t() {
     if (view == nullptr) return;
 
     int err;
     err = js_release_typedarray_view(nullptr, view);
     assert(err == 0);
+  }
+
+  void
+  operator=(const js_typedarray_t &that) {
+    if (this == &that) return;
+
+    this->~js_typedarray_t();
+
+    value = that.value;
+    view = nullptr;
   }
 };
 
@@ -147,7 +171,7 @@ struct js_receiver_t : js_handle_t {
 
   js_receiver_t(js_value_t *value) : js_handle_t(value) {}
 
-  js_receiver_t(const js_handle_t &value) : js_handle_t(value) {}
+  js_receiver_t(const js_handle_t &value) : js_handle_t(value.value) {}
 };
 
 template <typename T>
@@ -180,12 +204,12 @@ template <>
 struct js_type_info_t<void> {
   using type = void;
 
-  static constexpr auto
+  static auto
   signature() {
     return js_undefined;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *env, js_value_t *&result) {
     return js_get_undefined(env, &result);
   }
@@ -195,31 +219,31 @@ template <>
 struct js_type_info_t<bool> {
   using type = bool;
 
-  static constexpr auto
+  static auto
   signature() {
     return js_boolean;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *, bool value, bool &result) {
     result = value;
 
     return 0;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *env, bool value, js_value_t *&result) {
     return js_get_boolean(env, value, &result);
   }
 
-  static constexpr auto
+  static auto
   unmarshall(js_env_t *, bool value, bool &result) {
     result = value;
 
     return 0;
   }
 
-  static constexpr auto
+  static auto
   unmarshall(js_env_t *env, js_value_t *value, bool &result) {
     return js_get_value_bool(env, value, &result);
   }
@@ -229,31 +253,31 @@ template <>
 struct js_type_info_t<int32_t> {
   using type = int32_t;
 
-  static constexpr auto
+  static auto
   signature() {
     return js_int32;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *, int32_t value, int32_t &result) {
     result = value;
 
     return 0;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *env, int32_t value, js_value_t *&result) {
     return js_create_int32(env, value, &result);
   }
 
-  static constexpr auto
+  static auto
   unmarshall(js_env_t *, int32_t value, int32_t &result) {
     result = value;
 
     return 0;
   }
 
-  static constexpr auto
+  static auto
   unmarshall(js_env_t *env, js_value_t *value, int32_t &result) {
     return js_get_value_int32(env, value, &result);
   }
@@ -263,31 +287,31 @@ template <>
 struct js_type_info_t<uint32_t> {
   using type = uint32_t;
 
-  static constexpr auto
+  static auto
   signature() {
     return js_uint32;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *, uint32_t value, uint32_t &result) {
     result = value;
 
     return 0;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *env, uint32_t value, js_value_t *&result) {
     return js_create_uint32(env, value, &result);
   }
 
-  static constexpr auto
+  static auto
   unmarshall(js_env_t *env, uint32_t value, uint32_t &result) {
     result = value;
 
     return 0;
   }
 
-  static constexpr auto
+  static auto
   unmarshall(js_env_t *env, js_value_t *value, uint32_t &result) {
     return js_get_value_uint32(env, value, &result);
   }
@@ -297,31 +321,31 @@ template <>
 struct js_type_info_t<int64_t> {
   using type = int64_t;
 
-  static constexpr auto
+  static auto
   signature() {
     return js_int64;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *, int64_t value, int64_t &result) {
     result = value;
 
     return 0;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *env, int64_t value, js_value_t *&result) {
     return js_create_int64(env, value, &result);
   }
 
-  static constexpr auto
+  static auto
   unmarshall(js_env_t *, int64_t value, int64_t &result) {
     result = value;
 
     return 0;
   }
 
-  static constexpr auto
+  static auto
   unmarshall(js_env_t *env, js_value_t *value, int64_t &result) {
     return js_get_value_int64(env, value, &result);
   }
@@ -331,31 +355,31 @@ template <>
 struct js_type_info_t<double> {
   using type = double;
 
-  static constexpr auto
+  static auto
   signature() {
     return js_float64;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *, double value, double &result) {
     result = value;
 
     return 0;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *env, double value, js_value_t *&result) {
     return js_create_double(env, value, &result);
   }
 
-  static constexpr auto
+  static auto
   unmarshall(js_env_t *, double value, double &result) {
     result = value;
 
     return 0;
   }
 
-  static constexpr auto
+  static auto
   unmarshall(js_env_t *env, js_value_t *value, double &result) {
     return js_get_value_double(env, value, &result);
   }
@@ -365,12 +389,12 @@ template <>
 struct js_type_info_t<js_string_t> {
   using type = js_value_t *;
 
-  static constexpr auto
+  static auto
   signature() {
     return js_string;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *env, const js_string_t &string, js_value_t *&result) {
     result = string.value;
 
@@ -389,12 +413,12 @@ template <>
 struct js_type_info_t<js_arraybuffer_t> {
   using type = js_value_t *;
 
-  static constexpr auto
+  static auto
   signature() {
     return js_object;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *env, const js_arraybuffer_t &arraybuffer, js_value_t *&result) {
     result = arraybuffer.value;
 
@@ -413,12 +437,12 @@ template <typename T>
 struct js_type_info_t<js_typedarray_t<T>> {
   using type = js_value_t *;
 
-  static constexpr auto
+  static auto
   signature() {
     return js_object;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *env, const js_typedarray_t<T> &typedarray, js_value_t *&result) {
     result = typedarray.value;
 
@@ -437,7 +461,7 @@ template <typename R, typename... A>
 struct js_type_info_t<js_function_t<R, A...>> {
   using type = js_value_t *;
 
-  static constexpr auto
+  static auto
   signature() {
     return js_function;
   }
@@ -454,12 +478,12 @@ template <>
 struct js_type_info_t<js_external_t> {
   using type = js_value_t *;
 
-  static constexpr auto
+  static auto
   signature() {
     return js_external;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *env, const js_external_t &external, js_value_t *&result) {
     result = external.value;
 
@@ -478,12 +502,12 @@ template <>
 struct js_type_info_t<js_receiver_t> {
   using type = js_value_t *;
 
-  static constexpr auto
+  static auto
   signature() {
     return js_object;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *, const js_receiver_t &receiver, js_value_t *&result) {
     result = receiver.value;
 
@@ -502,19 +526,19 @@ template <typename T>
 struct js_type_info_t<T *> {
   using type = T *;
 
-  static constexpr auto
+  static auto
   signature() {
     return js_external;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *env, const T *&value, T *&result) {
     result = value;
 
     return 0;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *env, const T *&value, js_value_t *&result) {
     return js_create_external(env, (void *) value, nullptr, nullptr, &result);
   }
@@ -536,17 +560,17 @@ template <size_t N>
 struct js_type_info_t<char[N]> {
   using type = js_value_t *;
 
-  static constexpr auto
+  static auto
   signature() {
     return js_string;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *env, const char value[N], js_value_t *&result) {
     return js_create_string_utf8(env, (const utf8_t *) value, N, &result);
   }
 
-  static constexpr auto
+  static auto
   unmarshall(js_env_t *env, js_value_t *value, char result[N]) {
     int err;
 
@@ -564,12 +588,12 @@ template <>
 struct js_type_info_t<std::string> {
   using type = js_value_t *;
 
-  static constexpr auto
+  static auto
   signature() {
     return js_string;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *env, const std::string &value, js_value_t *&result) {
     return js_create_string_utf8(env, (const utf8_t *) value.data(), value.length(), &result);
   }
@@ -592,12 +616,12 @@ template <typename T, size_t N>
 struct js_type_info_t<std::array<T, N>> {
   using type = js_value_t *;
 
-  static constexpr auto
+  static auto
   signature() {
     return js_object;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *env, const std::array<T, N> &array, js_value_t *&result) {
     int err;
 
@@ -638,12 +662,12 @@ template <typename T>
 struct js_type_info_t<std::vector<T>> {
   using type = js_value_t *;
 
-  static constexpr auto
+  static auto
   signature() {
     return js_object;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *env, const std::vector<T> &vector, js_value_t *&result) {
     int err;
 
@@ -690,7 +714,7 @@ struct js_typedarray_info_t {};
 
 template <>
 struct js_typedarray_info_t<int8_t> {
-  constexpr static auto
+  static auto
   type() {
     return js_int8array;
   }
@@ -698,7 +722,7 @@ struct js_typedarray_info_t<int8_t> {
 
 template <>
 struct js_typedarray_info_t<uint8_t> {
-  constexpr static auto
+  static auto
   type() {
     return js_uint8array;
   }
@@ -706,7 +730,7 @@ struct js_typedarray_info_t<uint8_t> {
 
 template <>
 struct js_typedarray_info_t<int16_t> {
-  constexpr static auto
+  static auto
   type() {
     return js_int16array;
   }
@@ -714,7 +738,7 @@ struct js_typedarray_info_t<int16_t> {
 
 template <>
 struct js_typedarray_info_t<uint16_t> {
-  constexpr static auto
+  static auto
   type() {
     return js_uint16array;
   }
@@ -722,7 +746,7 @@ struct js_typedarray_info_t<uint16_t> {
 
 template <>
 struct js_typedarray_info_t<int32_t> {
-  constexpr static auto
+  static auto
   type() {
     return js_int32array;
   }
@@ -730,7 +754,7 @@ struct js_typedarray_info_t<int32_t> {
 
 template <>
 struct js_typedarray_info_t<uint32_t> {
-  constexpr static auto
+  static auto
   type() {
     return js_uint32array;
   }
@@ -738,7 +762,7 @@ struct js_typedarray_info_t<uint32_t> {
 
 template <>
 struct js_typedarray_info_t<int64_t> {
-  constexpr static auto
+  static auto
   type() {
     return js_bigint64array;
   }
@@ -746,7 +770,7 @@ struct js_typedarray_info_t<int64_t> {
 
 template <>
 struct js_typedarray_info_t<uint64_t> {
-  constexpr static auto
+  static auto
   type() {
     return js_biguint64array;
   }
@@ -754,7 +778,7 @@ struct js_typedarray_info_t<uint64_t> {
 
 template <>
 struct js_typedarray_info_t<float> {
-  constexpr static auto
+  static auto
   type() {
     return js_float32array;
   }
@@ -762,7 +786,7 @@ struct js_typedarray_info_t<float> {
 
 template <>
 struct js_typedarray_info_t<double> {
-  constexpr static auto
+  static auto
   type() {
     return js_float64array;
   }
@@ -776,7 +800,7 @@ struct js_function_info_t<fn> {
   using result = R;
   using arguments = std::tuple<A...>;
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *env, const char *name, size_t len, js_value_t *&result) {
     int err;
 
@@ -789,7 +813,7 @@ struct js_function_info_t<fn> {
     return 0;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *env, const char *name, js_value_t *&result) {
     int err;
 
@@ -802,7 +826,7 @@ struct js_function_info_t<fn> {
     return 0;
   }
 
-  static constexpr auto
+  static auto
   marshall(js_env_t *env, js_value_t *&result) {
     int err;
 
@@ -817,7 +841,7 @@ struct js_function_info_t<fn> {
 };
 
 template <typename T>
-constexpr auto
+static auto
 js_marshall_typed_value(js_env_t *env, T value) {
   int err;
 
@@ -829,7 +853,7 @@ js_marshall_typed_value(js_env_t *env, T value) {
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_marshall_untyped_value(js_env_t *env, T value) {
   int err;
 
@@ -840,7 +864,7 @@ js_marshall_untyped_value(js_env_t *env, T value) {
   return result;
 }
 
-constexpr auto
+static auto
 js_marshall_untyped_value(js_env_t *env) {
   int err;
 
@@ -852,7 +876,7 @@ js_marshall_untyped_value(js_env_t *env) {
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_unmarshall_typed_value(js_env_t *env, typename js_type_info_t<T>::type value) {
   int err;
 
@@ -864,7 +888,7 @@ js_unmarshall_typed_value(js_env_t *env, typename js_type_info_t<T>::type value)
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_unmarshall_untyped_value(js_env_t *env, js_value_t *value) {
   int err;
 
@@ -876,7 +900,7 @@ js_unmarshall_untyped_value(js_env_t *env, js_value_t *value) {
 }
 
 template <auto fn, typename R, typename... A>
-constexpr auto
+static auto
 js_typed_callback() {
   return +[](js_type_info_t<A>::type... args, js_typed_callback_info_t *info) -> js_type_info_t<R>::type {
     int err;
@@ -896,7 +920,7 @@ js_typed_callback() {
 }
 
 template <auto fn, typename R, typename... A, size_t... I>
-constexpr auto
+static auto
 js_untyped_callback(std::index_sequence<I...>) {
   return +[](js_env_t *env, js_callback_info_t *info) -> js_value_t * {
     int err;
@@ -935,13 +959,13 @@ js_untyped_callback(std::index_sequence<I...>) {
 }
 
 template <auto fn, typename R, typename... A>
-constexpr auto
+static auto
 js_untyped_callback() {
   return js_untyped_callback<fn, R, A...>(std::index_sequence_for<A...>());
 }
 
 template <auto fn, typename R, typename... A>
-constexpr auto
+static auto
 js_create_function(js_env_t *env, const char *name, size_t len, js_function_t<R, A...> &result) {
   auto typed = js_typed_callback<fn, R, A...>();
 
@@ -962,37 +986,37 @@ js_create_function(js_env_t *env, const char *name, size_t len, js_function_t<R,
 }
 
 template <auto fn, typename R, typename... A>
-constexpr auto
+static auto
 js_create_function(js_env_t *env, const std::string &name, js_function_t<R, A...> &result) {
   return js_create_function<fn, R, A...>(env, name.data(), name.length(), result);
 }
 
 template <auto fn, typename R, typename... A>
-constexpr auto
+static auto
 js_create_function(js_env_t *env, js_function_t<R, A...> &result) {
   return js_create_function<fn, R, A...>(env, nullptr, 0, result);
 }
 
 template <auto fn>
-constexpr auto
+static auto
 js_create_function(js_env_t *env, const char *name, size_t len, js_handle_t &result) {
   return js_function_info_t<fn>::marshall(env, name, len, result.value);
 }
 
 template <auto fn>
-constexpr auto
+static auto
 js_create_function(js_env_t *env, std::string name, js_handle_t &result) {
   return js_function_info_t<fn>::marshall(env, name.data(), name.length(), result.value);
 }
 
 template <auto fn>
-constexpr auto
+static auto
 js_create_function(js_env_t *env, js_handle_t &result) {
   return js_function_info_t<fn>::marshall(env, result.value);
 }
 
 template <typename... A>
-constexpr auto
+static auto
 js_call_function(js_env_t *env, const js_function_t<void, A...> &function, const A &...args) {
   int err;
 
@@ -1025,7 +1049,7 @@ js_call_function(js_env_t *env, const js_function_t<void, A...> &function, const
 }
 
 template <typename R, typename... A>
-constexpr auto
+static auto
 js_call_function(js_env_t *env, const js_function_t<R, A...> &function, const A &...args, R &result) {
   int err;
 
@@ -1063,52 +1087,52 @@ js_call_function(js_env_t *env, const js_function_t<R, A...> &function, const A 
   return 0;
 }
 
-constexpr auto
+static auto
 js_create_object(js_env_t *env, js_object_t &result) {
   return js_create_object(env, &result.value);
 }
 
 template <size_t N>
-constexpr auto
+static auto
 js_create_string(js_env_t *env, const char value[N], js_string_t &result) {
   return js_create_string_utf8(env, value, N, &result.value);
 }
 
-constexpr auto
+static auto
 js_create_string(js_env_t *env, const utf8_t *value, size_t len, js_string_t &result) {
   return js_create_string_utf8(env, value, len, &result.value);
 }
 
-constexpr auto
+static auto
 js_create_string(js_env_t *env, const std::string &value, js_string_t &result) {
   return js_create_string_utf8(env, (const utf8_t *) value.data(), value.length(), &result.value);
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_create_arraybuffer(js_env_t *env, size_t len, T *&data, js_arraybuffer_t &result) {
   return js_create_arraybuffer(env, len * sizeof(T), (void **) &data, &result.value);
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_create_arraybuffer(js_env_t *env, T *&data, js_arraybuffer_t &result) {
   return js_create_arraybuffer(env, sizeof(T), (void **) &data, &result.value);
 }
 
-constexpr auto
+static auto
 js_create_arraybuffer(js_env_t *env, size_t len, js_arraybuffer_t &result) {
   return js_create_arraybuffer(env, len, nullptr, &result.value);
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_create_arraybuffer(js_env_t *env, size_t len, js_arraybuffer_t &result) {
   return js_create_arraybuffer(env, len * sizeof(T), nullptr, &result.value);
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_create_arraybuffer(js_env_t *env, size_t len, std::span<T> &view, js_arraybuffer_t &result) {
   int err;
 
@@ -1122,19 +1146,19 @@ js_create_arraybuffer(js_env_t *env, size_t len, std::span<T> &view, js_arraybuf
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_create_typedarray(js_env_t *env, size_t len, const js_arraybuffer_t &arraybuffer, size_t offset, js_typedarray_t<T> &result) {
   return js_create_typedarray(env, js_typedarray_info_t<T>::type(), len, arraybuffer.value, offset, &result.value);
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_create_typedarray(js_env_t *env, size_t len, const js_arraybuffer_t &arraybuffer, js_typedarray_t<T> &result) {
   return js_create_typedarray(env, len, arraybuffer, 0, result);
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_create_typedarray(js_env_t *env, size_t len, T *&data, js_typedarray_t<T> &result) {
   int err;
 
@@ -1146,7 +1170,7 @@ js_create_typedarray(js_env_t *env, size_t len, T *&data, js_typedarray_t<T> &re
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_create_typedarray(js_env_t *env, size_t len, std::span<T> &view, js_typedarray_t<T> &result) {
   int err;
 
@@ -1158,7 +1182,7 @@ js_create_typedarray(js_env_t *env, size_t len, std::span<T> &view, js_typedarra
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_create_typedarray(js_env_t *env, size_t len, js_typedarray_t<T> &result) {
   int err;
 
@@ -1170,7 +1194,7 @@ js_create_typedarray(js_env_t *env, size_t len, js_typedarray_t<T> &result) {
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_create_typedarray(js_env_t *env, T *&data, js_typedarray_t<uint8_t> &result) {
   int err;
 
@@ -1182,7 +1206,7 @@ js_create_typedarray(js_env_t *env, T *&data, js_typedarray_t<uint8_t> &result) 
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_get_arraybuffer_info(js_env_t *env, const js_arraybuffer_t &arraybuffer, T *&data, size_t &len) {
   int err;
   err = js_get_arraybuffer_info(env, arraybuffer.value, (void **) &data, &len);
@@ -1196,7 +1220,7 @@ js_get_arraybuffer_info(js_env_t *env, const js_arraybuffer_t &arraybuffer, T *&
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_get_arraybuffer_info(js_env_t *env, const js_arraybuffer_t &arraybuffer, T *&data) {
   int err;
 
@@ -1210,7 +1234,7 @@ js_get_arraybuffer_info(js_env_t *env, const js_arraybuffer_t &arraybuffer, T *&
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_get_arraybuffer_info(js_env_t *env, const js_arraybuffer_t &arraybuffer, std::span<T> &view) {
   int err;
 
@@ -1225,7 +1249,7 @@ js_get_arraybuffer_info(js_env_t *env, const js_arraybuffer_t &arraybuffer, std:
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_get_typedarray_info(js_env_t *env, js_typedarray_t<T> &typedarray, T *&data, size_t &len) {
   int err;
 
@@ -1240,7 +1264,7 @@ js_get_typedarray_info(js_env_t *env, js_typedarray_t<T> &typedarray, T *&data, 
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_get_typedarray_info(js_env_t *env, js_typedarray_t<uint8_t> &typedarray, T *&data) {
   int err;
 
@@ -1261,7 +1285,7 @@ js_get_typedarray_info(js_env_t *env, js_typedarray_t<uint8_t> &typedarray, T *&
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_get_typedarray_info(js_env_t *env, js_typedarray_t<T> &typedarray, std::span<T> &view) {
   int err;
 
@@ -1275,7 +1299,7 @@ js_get_typedarray_info(js_env_t *env, js_typedarray_t<T> &typedarray, std::span<
   return 0;
 }
 
-constexpr auto
+static auto
 js_get_value_string(js_env_t *env, const js_string_t &string, std::string &result) {
   int err;
 
@@ -1288,23 +1312,23 @@ js_get_value_string(js_env_t *env, const js_string_t &string, std::string &resul
   return js_get_value_string_utf8(env, string.value, (utf8_t *) result.data(), result.length(), nullptr);
 }
 
-constexpr auto
+static auto
 js_get_global(js_env_t *env, js_object_t &result) {
   return js_get_global(env, &result.value);
 }
 
-constexpr auto
+static auto
 js_get_property(js_env_t *env, const js_object_t &object, const js_name_t &name, js_handle_t &result) {
   return js_get_property(env, object.value, name.value, &result.value);
 }
 
-constexpr auto
+static auto
 js_get_property(js_env_t *env, const js_object_t &object, const char *name, js_handle_t &result) {
   return js_get_named_property(env, object.value, name, &result.value);
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_get_property(js_env_t *env, const js_object_t &object, const js_name_t &name, T &result) {
   int err;
 
@@ -1316,7 +1340,7 @@ js_get_property(js_env_t *env, const js_object_t &object, const js_name_t &name,
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_get_property(js_env_t *env, const js_object_t &object, const char *name, T &result) {
   int err;
 
@@ -1327,18 +1351,18 @@ js_get_property(js_env_t *env, const js_object_t &object, const char *name, T &r
   return js_type_info_t<T>::unmarshall(env, value, result);
 }
 
-constexpr auto
+static auto
 js_set_property(js_env_t *env, const js_object_t &object, const js_name_t &name, const js_handle_t &value) {
   return js_set_property(env, object.value, name.value, value.value);
 }
 
-constexpr auto
+static auto
 js_set_property(js_env_t *env, const js_object_t &object, const char *name, const js_handle_t &value) {
   return js_set_named_property(env, object.value, name, value.value);
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_set_property(js_env_t *env, const js_object_t &object, const js_name_t &name, const T &value) {
   int err;
 
@@ -1350,7 +1374,7 @@ js_set_property(js_env_t *env, const js_object_t &object, const js_name_t &name,
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_set_property(js_env_t *env, const js_object_t &object, const char *name, const T &value) {
   int err;
 
@@ -1362,7 +1386,7 @@ js_set_property(js_env_t *env, const js_object_t &object, const char *name, cons
 }
 
 template <auto fn>
-constexpr auto
+static auto
 js_set_property(js_env_t *env, const js_object_t &object, const js_name_t &name) {
   int err;
 
@@ -1374,7 +1398,7 @@ js_set_property(js_env_t *env, const js_object_t &object, const js_name_t &name)
 }
 
 template <auto fn>
-constexpr auto
+static auto
 js_set_property(js_env_t *env, const js_object_t &object, const char *name) {
   int err;
 
@@ -1385,13 +1409,13 @@ js_set_property(js_env_t *env, const js_object_t &object, const char *name) {
   return js_set_named_property(env, object.value, name, marshalled);
 }
 
-constexpr auto
+static auto
 js_get_element(js_env_t *env, const js_object_t &object, uint32_t index, js_handle_t &result) {
   return js_get_element(env, object.value, index, &result.value);
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_get_element(js_env_t *env, const js_object_t &object, uint32_t index, T &result) {
   int err;
 
@@ -1402,13 +1426,13 @@ js_get_element(js_env_t *env, const js_object_t &object, uint32_t index, T &resu
   return js_type_info_t<T>::unmarshall(env, value, result);
 }
 
-constexpr auto
+static auto
 js_set_element(js_env_t *env, const js_object_t &object, uint32_t index, const js_handle_t &value) {
   return js_set_element(env, object.value, index, value.value);
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_set_element(js_env_t *env, const js_object_t &object, uint32_t index, const T &value) {
   int err;
 
@@ -1420,7 +1444,7 @@ js_set_element(js_env_t *env, const js_object_t &object, uint32_t index, const T
 }
 
 template <auto fn>
-constexpr auto
+static auto
 js_set_element(js_env_t *env, const js_object_t &object, uint32_t index) {
   int err;
 
@@ -1431,23 +1455,23 @@ js_set_element(js_env_t *env, const js_object_t &object, uint32_t index) {
   return js_set_element(env, object.value, index, marshalled);
 }
 
-constexpr auto
+static auto
 js_run_script(js_env_t *env, const char *file, size_t len, int offset, const js_string_t &source, js_handle_t &result) {
   return js_run_script(env, file, len, offset, source.value, &result.value);
 }
 
-constexpr auto
+static auto
 js_run_script(js_env_t *env, const std::string &file, int offset, const js_string_t &source, js_handle_t &result) {
   return js_run_script(env, file.data(), file.length(), offset, source.value, &result.value);
 }
 
-constexpr auto
+static auto
 js_run_script(js_env_t *env, const js_string_t &source, js_handle_t &result) {
   return js_run_script(env, nullptr, 0, 0, source.value, &result.value);
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_create_reference(js_env_t *env, const T &value, js_persistent_t<T> &result) {
   result.env = env;
 
@@ -1455,7 +1479,7 @@ js_create_reference(js_env_t *env, const T &value, js_persistent_t<T> &result) {
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_create_weak_reference(js_env_t *env, const T &value, js_persistent_t<T> &result) {
   result.env = env;
 
@@ -1463,7 +1487,7 @@ js_create_weak_reference(js_env_t *env, const T &value, js_persistent_t<T> &resu
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_get_reference_value(js_env_t *env, const js_persistent_t<T> &reference, T &result) {
   int err;
 
@@ -1479,7 +1503,7 @@ js_get_reference_value(js_env_t *env, const js_persistent_t<T> &reference, T &re
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_get_reference_value(js_env_t *env, const js_persistent_t<T> &reference, std::optional<T> &result) {
   int err;
 
@@ -1493,7 +1517,7 @@ js_get_reference_value(js_env_t *env, const js_persistent_t<T> &reference, std::
 }
 
 template <typename T>
-constexpr auto
+static auto
 js_reset_reference(js_env_t *env, js_persistent_t<T> &reference) {
   int err;
 

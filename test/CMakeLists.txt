@@ -30,6 +30,9 @@ list(APPEND tests
   create-reference-get-value-optional
   create-reference-move-assign
   create-typedarray-data-cast
+  create-typedarray-get-info
+  create-typedarray-get-info-copy
+  create-typedarray-get-info-move-assign
   get-typedarray-info-data-cast
   set-get-property-literal-function-pointer
   set-get-property-literal-int32
