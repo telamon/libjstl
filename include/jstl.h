@@ -685,6 +685,52 @@ struct js_type_info_t<std::string> {
 };
 
 template <typename T, size_t N>
+struct js_type_info_t<T[N]> {
+  using type = js_value_t *;
+
+  static auto
+  signature() {
+    return js_object;
+  }
+
+  static auto
+  marshall(js_env_t *env, const T array[N], js_value_t *&result) {
+    int err;
+
+    err = js_create_array_with_length(env, N, &result);
+    assert(err == 0);
+
+    js_value_t *values[N];
+
+    for (uint32_t i = 0; i < N; i++) {
+      err = js_type_info_t<T>::marshall(env, array[i], values[i]);
+      if (err < 0) return err;
+    }
+
+    return js_set_array_elements(env, result, (const js_value_t **) values, N, 0);
+  }
+
+  static auto
+  unmarshall(js_env_t *env, js_value_t *value, T result[N]) {
+    int err;
+
+    js_value_t *values[N];
+    uint32_t len;
+    err = js_get_array_elements(env, value, values, N, 0, &len);
+    if (err < 0) return err;
+
+    assert(len == N);
+
+    for (uint32_t i = 0; i < N; i++) {
+      err = js_type_info_t<T>::unmarshall(env, values[i], result[i]);
+      if (err < 0) return err;
+    }
+
+    return 0;
+  }
+};
+
+template <typename T, size_t N>
 struct js_type_info_t<std::array<T, N>> {
   using type = js_value_t *;
 
