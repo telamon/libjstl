@@ -12,6 +12,10 @@
 #include <stdint.h>
 #include <utf.h>
 
+#ifdef JSTL_DIAGNOSTICS
+#include "jstl/diagnostics.h"
+#endif
+
 struct js_handle_t {
   js_value_t *value;
 
@@ -909,6 +913,10 @@ js_typed_callback() {
     err = js_get_typed_callback_info(info, &env, nullptr);
     assert(err == 0);
 
+#ifdef JSTL_DIAGNOSTICS
+    jstl::diag::increase_typed(reinterpret_cast<void *>(fn));
+#endif
+
     if constexpr (std::is_same<R, void>()) {
       fn(env, js_unmarshall_typed_value<A>(env, args)...);
     } else {
@@ -946,6 +954,10 @@ js_untyped_callback(std::index_sequence<I...>) {
       assert(argc == sizeof...(A));
     }
 
+#ifdef JSTL_DIAGNOSTICS
+    jstl::diag::increase_untyped(reinterpret_cast<void *>(fn));
+#endif
+
     if constexpr (std::is_same<R, void>()) {
       fn(env, js_unmarshall_untyped_value<A>(env, argv[I])...);
 
@@ -981,6 +993,10 @@ js_create_function(js_env_t *env, const char *name, size_t len, js_function_t<R,
   signature.result = js_type_info_t<R>::signature();
   signature.args_len = sizeof...(A);
   signature.args = args;
+
+#ifdef JSTL_DIAGNOSTICS
+  jstl::diag::name((void *) fn, name, len);
+#endif
 
   return js_create_typed_function(env, name, len, untyped, &signature, (const void *) typed, nullptr, &result.value);
 }
