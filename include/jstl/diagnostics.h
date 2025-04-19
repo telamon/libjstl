@@ -81,7 +81,7 @@ namespace jstl::diag {
   }
 }
 
-static inline void
+static inline int
 jstl_diag_exports(js_env_t *env, js_value_t *exports) {
   int err = 0;
 
@@ -89,8 +89,10 @@ jstl_diag_exports(js_env_t *env, js_value_t *exports) {
 
   js_value_t *fn;
   err = js_create_function(env, name, -1, jstl::diag::on_print, NULL, &fn);
-  assert(err == 0);
+  if (err < 0) return err;
 
   err = js_set_named_property(env, exports, name, fn);
-  assert(err == 0);
+  if (err < 0) return err;
+
+  return 0;
 }
