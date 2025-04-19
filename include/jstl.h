@@ -72,12 +72,6 @@ struct js_name_t : js_primitive_t {
   js_name_t(js_value_t *value) : js_primitive_t(value) {}
 };
 
-struct js_symbol_t : js_name_t {
-  js_symbol_t() : js_name_t() {}
-
-  js_symbol_t(js_value_t *value) : js_name_t(value) {}
-};
-
 struct js_string_t : js_name_t {
   js_string_view_t *view;
 
@@ -104,6 +98,12 @@ struct js_string_t : js_name_t {
     value = that.value;
     view = nullptr;
   }
+};
+
+struct js_symbol_t : js_name_t {
+  js_symbol_t() : js_name_t() {}
+
+  js_symbol_t(js_value_t *value) : js_name_t(value) {}
 };
 
 struct js_object_t : js_handle_t {
@@ -153,6 +153,14 @@ struct js_typedarray_t : js_object_t {
   }
 };
 
+struct js_receiver_t : js_handle_t {
+  js_receiver_t() : js_handle_t() {}
+
+  js_receiver_t(js_value_t *value) : js_handle_t(value) {}
+
+  js_receiver_t(const js_handle_t &value) : js_handle_t(value.value) {}
+};
+
 template <typename R, typename... A>
 struct js_function_t : js_object_t {
   js_function_t() : js_object_t() {}
@@ -164,14 +172,6 @@ struct js_external_t : js_handle_t {
   js_external_t() : js_handle_t() {}
 
   js_external_t(js_value_t *value) : js_handle_t(value) {}
-};
-
-struct js_receiver_t : js_handle_t {
-  js_receiver_t() : js_handle_t() {}
-
-  js_receiver_t(js_value_t *value) : js_handle_t(value) {}
-
-  js_receiver_t(const js_handle_t &value) : js_handle_t(value.value) {}
 };
 
 template <typename T>
@@ -410,6 +410,78 @@ struct js_type_info_t<js_string_t> {
 };
 
 template <>
+struct js_type_info_t<js_symbol_t> {
+  using type = js_value_t *;
+
+  static auto
+  signature() {
+    return js_symbol;
+  }
+
+  static auto
+  marshall(js_env_t *env, const js_symbol_t &symbol, js_value_t *&result) {
+    result = symbol.value;
+
+    return 0;
+  }
+
+  static auto
+  unmarshall(js_env_t *env, js_value_t *value, js_symbol_t &result) {
+    result = js_symbol_t(value);
+
+    return 0;
+  }
+};
+
+template <>
+struct js_type_info_t<js_object_t> {
+  using type = js_value_t *;
+
+  static auto
+  signature() {
+    return js_object;
+  }
+
+  static auto
+  marshall(js_env_t *env, const js_object_t &object, js_value_t *&result) {
+    result = object.value;
+
+    return 0;
+  }
+
+  static auto
+  unmarshall(js_env_t *env, js_value_t *value, js_object_t &result) {
+    result = js_object_t(value);
+
+    return 0;
+  }
+};
+
+template <>
+struct js_type_info_t<js_array_t> {
+  using type = js_value_t *;
+
+  static auto
+  signature() {
+    return js_object;
+  }
+
+  static auto
+  marshall(js_env_t *env, const js_array_t &array, js_value_t *&result) {
+    result = array.value;
+
+    return 0;
+  }
+
+  static auto
+  unmarshall(js_env_t *env, js_value_t *value, js_array_t &result) {
+    result = js_array_t(value);
+
+    return 0;
+  }
+};
+
+template <>
 struct js_type_info_t<js_arraybuffer_t> {
   using type = js_value_t *;
 
@@ -457,6 +529,30 @@ struct js_type_info_t<js_typedarray_t<T>> {
   }
 };
 
+template <>
+struct js_type_info_t<js_receiver_t> {
+  using type = js_value_t *;
+
+  static auto
+  signature() {
+    return js_object;
+  }
+
+  static auto
+  marshall(js_env_t *, const js_receiver_t &receiver, js_value_t *&result) {
+    result = receiver.value;
+
+    return 0;
+  }
+
+  static auto
+  unmarshall(js_env_t *, js_value_t *value, js_receiver_t &result) {
+    result = js_receiver_t(value);
+
+    return 0;
+  }
+};
+
 template <typename R, typename... A>
 struct js_type_info_t<js_function_t<R, A...>> {
   using type = js_value_t *;
@@ -493,30 +589,6 @@ struct js_type_info_t<js_external_t> {
   static auto
   unmarshall(js_env_t *env, js_value_t *value, js_external_t &result) {
     result = js_external_t(value);
-
-    return 0;
-  }
-};
-
-template <>
-struct js_type_info_t<js_receiver_t> {
-  using type = js_value_t *;
-
-  static auto
-  signature() {
-    return js_object;
-  }
-
-  static auto
-  marshall(js_env_t *, const js_receiver_t &receiver, js_value_t *&result) {
-    result = receiver.value;
-
-    return 0;
-  }
-
-  static auto
-  unmarshall(js_env_t *, js_value_t *value, js_receiver_t &result) {
-    result = js_receiver_t(value);
 
     return 0;
   }
@@ -710,7 +782,7 @@ struct js_type_info_t<std::vector<T>> {
 };
 
 template <typename T>
-struct js_typedarray_info_t {};
+struct js_typedarray_info_t;
 
 template <>
 struct js_typedarray_info_t<int8_t> {
