@@ -604,19 +604,19 @@ struct js_type_info_t<T *> {
   }
 
   static auto
-  marshall(js_env_t *env, const T *&value, T *&result) {
+  marshall(js_env_t *env, T *value, T *&result) {
     result = value;
 
     return 0;
   }
 
   static auto
-  marshall(js_env_t *env, const T *&value, js_value_t *&result) {
+  marshall(js_env_t *env, T *value, js_value_t *&result) {
     return js_create_external(env, (void *) value, nullptr, nullptr, &result);
   }
 
   static auto
-  unmarshall(js_env_t *env, const T *value, T *&result) {
+  unmarshall(js_env_t *env, T *value, T *&result) {
     result = value;
 
     return 0;
@@ -653,6 +653,51 @@ struct js_type_info_t<char[N]> {
     assert(len == N);
 
     return 0;
+  }
+};
+
+template <size_t N>
+struct js_type_info_t<const char[N]> {
+  using type = js_value_t *;
+
+  static auto
+  signature() {
+    return js_string;
+  }
+
+  static auto
+  marshall(js_env_t *env, const char value[N], js_value_t *&result) {
+    return js_create_string_utf8(env, (const utf8_t *) value, N, &result);
+  }
+};
+
+template <>
+struct js_type_info_t<char *> {
+  using type = js_value_t *;
+
+  static auto
+  signature() {
+    return js_string;
+  }
+
+  static auto
+  marshall(js_env_t *env, const char *value, js_value_t *&result) {
+    return js_create_string_utf8(env, (const utf8_t *) value, -1, &result);
+  }
+};
+
+template <>
+struct js_type_info_t<const char *> {
+  using type = js_value_t *;
+
+  static auto
+  signature() {
+    return js_string;
+  }
+
+  static auto
+  marshall(js_env_t *env, const char *value, js_value_t *&result) {
+    return js_create_string_utf8(env, (const utf8_t *) value, -1, &result);
   }
 };
 
@@ -915,6 +960,7 @@ struct js_function_info_t;
 
 template <typename R, typename... A, R fn(js_env_t *, A...)>
 struct js_function_info_t<fn> {
+  using type = R(js_env_t *, A...);
   using result = R;
   using arguments = std::tuple<A...>;
 
@@ -956,6 +1002,19 @@ struct js_function_info_t<fn> {
 
     return 0;
   }
+};
+
+template <typename T>
+struct js_property_t {
+  std::string name;
+  T value;
+
+  js_property_t(const std::string &name, T value) : name(name), value(value) {}
+
+  template <size_t N>
+  js_property_t(const char name[N], T value) : name(name, N), value(value) {}
+
+  js_property_t(const char *name, T value) : name(name), value(value) {}
 };
 
 template <typename T>
@@ -1210,6 +1269,56 @@ js_create_object(js_env_t *env, js_object_t &result) {
   return js_create_object(env, &result.value);
 }
 
+template <typename... T>
+static inline auto
+js_create_object(js_env_t *env, js_object_t &result, const js_property_t<T>... properties) {
+  int err;
+  err = js_create_object(env, result);
+  if (err < 0) return err;
+
+  return js_define_properties(env, result, properties...);
+}
+
+static inline auto
+js_create_array(js_env_t *env, js_array_t &result) {
+  return js_create_array(env, &result.value);
+}
+
+static inline auto
+js_create_array(js_env_t *env, size_t len, js_array_t &result) {
+  return js_create_array_with_length(env, len, &result.value);
+}
+
+template <typename T, size_t N>
+static inline auto
+js_create_array(js_env_t *env, const T values[N], js_array_t &result) {
+  int err;
+  err = js_create_array(env, N, result);
+  if (err < 0) return err;
+
+  return js_set_array_elements(env, result, values);
+}
+
+template <typename T, size_t N>
+static inline auto
+js_create_array(js_env_t *env, const std::array<T, N> values, js_array_t &result) {
+  int err;
+  err = js_create_array(env, N, result);
+  if (err < 0) return err;
+
+  return js_set_array_elements(env, result, values);
+}
+
+template <typename T>
+static inline auto
+js_create_array(js_env_t *env, const std::vector<T> values, js_array_t &result) {
+  int err;
+  err = js_create_array(env, values.size(), result);
+  if (err < 0) return err;
+
+  return js_set_array_elements(env, result, values);
+}
+
 template <size_t N>
 static inline auto
 js_create_string(js_env_t *env, const char value[N], js_string_t &result) {
@@ -1259,6 +1368,62 @@ js_create_arraybuffer(js_env_t *env, size_t len, std::span<T> &view, js_arraybuf
   if (err < 0) return err;
 
   view = std::span(data, len);
+
+  return 0;
+}
+
+template <typename T, size_t N>
+static inline auto
+js_create_arraybuffer(js_env_t *env, const T data[N], js_arraybuffer_t &result) {
+  int err;
+
+  std::span<T> view;
+  err = js_create_arraybuffer(env, N, view, result);
+  if (err < 0) return err;
+
+  std::copy(data, data + N, view.begin());
+
+  return 0;
+}
+
+template <typename T, size_t N>
+static inline auto
+js_create_arraybuffer(js_env_t *env, const std::array<T, N> data, js_arraybuffer_t &result) {
+  int err;
+
+  std::span<T> view;
+  err = js_create_arraybuffer(env, N, view, result);
+  if (err < 0) return err;
+
+  std::copy(data.begin(), data.end(), view.begin());
+
+  return 0;
+}
+
+template <typename T>
+static inline auto
+js_create_arraybuffer(js_env_t *env, const std::span<T> &data, js_arraybuffer_t &result) {
+  int err;
+
+  std::span<T> view;
+  err = js_create_arraybuffer(env, data.size(), view, result);
+  if (err < 0) return err;
+
+  std::copy(data.begin(), data.end(), view.begin());
+
+  return 0;
+}
+
+template <typename T>
+static inline auto
+js_create_arraybuffer(js_env_t *env, const std::vector<T> &data, js_arraybuffer_t &result) {
+  int err;
+
+  std::span<T> view;
+  err = js_create_arraybuffer(env, data.size(), view, result);
+  if (err < 0) return err;
+
+  std::copy(data.begin(), data.end(), view.begin());
 
   return 0;
 }
@@ -1323,6 +1488,62 @@ js_create_typedarray(js_env_t *env, T *&data, js_typedarray_t<uint8_t> &result) 
   return js_create_typedarray(env, sizeof(T), arraybuffer, result);
 }
 
+template <typename T, size_t N>
+static inline auto
+js_create_typedarray(js_env_t *env, const T data[N], js_typedarray_t<T> &result) {
+  int err;
+
+  std::span<T> view;
+  err = js_create_typedarray(env, N, view, result);
+  if (err < 0) return err;
+
+  std::copy(data, data + N, view.begin());
+
+  return 0;
+}
+
+template <typename T, size_t N>
+static inline auto
+js_create_typedarray(js_env_t *env, const std::array<T, N> data, js_typedarray_t<T> &result) {
+  int err;
+
+  std::span<T> view;
+  err = js_create_typedarray(env, N, view, result);
+  if (err < 0) return err;
+
+  std::copy(data.begin(), data.end(), view.begin());
+
+  return 0;
+}
+
+template <typename T>
+static inline auto
+js_create_typedarray(js_env_t *env, const std::span<T> &data, js_typedarray_t<T> &result) {
+  int err;
+
+  std::span<T> view;
+  err = js_create_typedarray(env, data.size(), view, result);
+  if (err < 0) return err;
+
+  std::copy(data.begin(), data.end(), view.begin());
+
+  return 0;
+}
+
+template <typename T>
+static inline auto
+js_create_typedarray(js_env_t *env, const std::vector<T> &data, js_typedarray_t<T> &result) {
+  int err;
+
+  std::span<T> view;
+  err = js_create_typedarray(env, data.size(), view, result);
+  if (err < 0) return err;
+
+  std::copy(data.begin(), data.end(), view.begin());
+
+  return 0;
+}
+
 template <typename T>
 static inline auto
 js_get_arraybuffer_info(js_env_t *env, const js_arraybuffer_t &arraybuffer, T *&data, size_t &len) {
@@ -1371,7 +1592,7 @@ static inline auto
 js_get_typedarray_info(js_env_t *env, js_typedarray_t<T> &typedarray, T *&data, size_t &len) {
   int err;
 
-  if (typedarray.view) {
+  if (typedarray.view != nullptr) {
     err = js_release_typedarray_view(env, typedarray.view);
     if (err < 0) return err;
 
@@ -1386,7 +1607,7 @@ static inline auto
 js_get_typedarray_info(js_env_t *env, js_typedarray_t<uint8_t> &typedarray, T *&data) {
   int err;
 
-  if (typedarray.view) {
+  if (typedarray.view != nullptr) {
     err = js_release_typedarray_view(env, typedarray.view);
     if (err < 0) return err;
 
@@ -1571,6 +1792,165 @@ js_set_element(js_env_t *env, const js_object_t &object, uint32_t index) {
   if (err < 0) return err;
 
   return js_set_element(env, object.value, index, marshalled);
+}
+
+template <typename T, size_t N>
+static inline auto
+js_get_array_elements(js_env_t *env, const js_array_t &array, T result[N]) {
+  int err;
+
+  js_value_t *values[N];
+  uint32_t len;
+  err = js_get_array_elements(env, array.value, values, N, 0, &len);
+  if (err < 0) return err;
+
+  assert(len == N);
+
+  for (uint32_t i = 0; i < N; i++) {
+    err = js_type_info_t<T>::unmarshall(env, values[i], result[i]);
+    if (err < 0) return err;
+  }
+
+  return 0;
+}
+
+template <typename T, size_t N>
+static inline auto
+js_get_array_elements(js_env_t *env, const js_array_t &array, std::array<T, N> &result) {
+  int err;
+
+  js_value_t *values[N];
+  uint32_t len;
+  err = js_get_array_elements(env, array.value, values, N, 0, &len);
+  if (err < 0) return err;
+
+  assert(len == N);
+
+  for (uint32_t i = 0; i < N; i++) {
+    err = js_type_info_t<T>::unmarshall(env, values[i], result[i]);
+    if (err < 0) return err;
+  }
+
+  return 0;
+}
+
+template <typename T>
+static inline auto
+js_get_array_elements(js_env_t *env, const js_array_t &array, std::vector<T> &result) {
+  int err;
+
+  uint32_t len;
+  err = js_get_array_length(env, array.value, &len);
+  if (err < 0) return err;
+
+  std::vector<js_value_t *> values(len);
+  err = js_get_array_elements(env, array.value, values.data(), len, 0, &len);
+  if (err < 0) return err;
+
+  result.resize(len);
+
+  for (uint32_t i = 0; i < len; i++) {
+    err = js_type_info_t<T>::unmarshall(env, values[i], result[i]);
+    if (err < 0) return err;
+  }
+
+  return 0;
+}
+
+template <typename T, size_t N>
+static inline auto
+js_set_array_elements(js_env_t *env, const js_array_t &array, const T values[N], size_t offset = 0) {
+  int err;
+
+  js_value_t *marshalled[N];
+
+  for (uint32_t i = 0; i < N; i++) {
+    err = js_type_info_t<T>::marshall(env, values[i], marshalled[i]);
+    if (err < 0) return err;
+  }
+
+  return js_set_array_elements(env, array.value, (const js_value_t **) marshalled, N, offset);
+}
+
+template <typename T, size_t N>
+static inline auto
+js_set_array_elements(js_env_t *env, const js_array_t &array, const std::array<T, N> &values, size_t offset = 0) {
+  int err;
+
+  js_value_t *marshalled[N];
+
+  for (uint32_t i = 0; i < N; i++) {
+    err = js_type_info_t<T>::marshall(env, values[i], marshalled[i]);
+    if (err < 0) return err;
+  }
+
+  return js_set_array_elements(env, array.value, (const js_value_t **) marshalled, N, offset);
+}
+
+template <typename T>
+static inline auto
+js_set_array_elements(js_env_t *env, const js_array_t &array, const std::vector<T> &values, size_t offset = 0) {
+  int err;
+
+  auto len = values.size();
+
+  std::vector<js_value_t *> marshalled(len);
+
+  for (uint32_t i = 0; i < len; i++) {
+    err = js_type_info_t<T>::marshall(env, values[i], marshalled[i]);
+    if (err < 0) return err;
+  }
+
+  return js_set_array_elements(env, array.value, (const js_value_t **) marshalled.data(), len, offset);
+}
+
+template <typename T>
+static inline auto
+js_create_property_descriptor(js_env_t *env, const js_property_t<T> &property, js_property_descriptor_t &result) {
+  int err;
+
+  js_property_descriptor_t descriptor;
+
+  descriptor.version = 0;
+  descriptor.data = nullptr;
+  descriptor.attributes = js_writable | js_enumerable | js_configurable;
+  descriptor.method = nullptr;
+  descriptor.getter = nullptr;
+  descriptor.setter = nullptr;
+
+  const auto &name = property.name;
+
+  err = js_create_string_utf8(env, (const utf8_t *) name.data(), name.length(), &descriptor.name);
+  if (err < 0) return err;
+
+  err = js_type_info_t<T>::marshall(env, property.value, descriptor.value);
+  if (err < 0) return err;
+
+  result = descriptor;
+
+  return 0;
+}
+
+template <typename T>
+static inline auto
+js_create_property_descriptor(js_env_t *env, const js_property_t<T> &property) {
+  int err;
+
+  js_property_descriptor_t descriptor;
+  err = js_create_property_descriptor(env, property, descriptor);
+  assert(err == 0);
+
+  return descriptor;
+}
+
+template <typename... T>
+static inline auto
+js_define_properties(js_env_t *env, const js_object_t &object, const js_property_t<T>... properties) {
+  js_property_descriptor_t descriptors[] = {
+    js_create_property_descriptor(env, properties)...
+  };
+
+  return js_define_properties(env, object.value, descriptors, sizeof...(T));
 }
 
 static inline auto
