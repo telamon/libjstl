@@ -386,6 +386,30 @@ struct js_type_info_t<double> {
 };
 
 template <>
+struct js_type_info_t<js_bigint_t> {
+  using type = js_value_t *;
+
+  static auto
+  signature() {
+    return js_bigint;
+  }
+
+  static auto
+  marshall(js_env_t *env, const js_bigint_t &bigint, js_value_t *&result) {
+    result = bigint.value;
+
+    return 0;
+  }
+
+  static auto
+  unmarshall(js_env_t *env, js_value_t *value, js_bigint_t &result) {
+    result = js_bigint_t(value);
+
+    return 0;
+  }
+};
+
+template <>
 struct js_type_info_t<js_string_t> {
   using type = js_value_t *;
 
@@ -1319,6 +1343,16 @@ js_create_array(js_env_t *env, const std::vector<T> values, js_array_t &result) 
   return js_set_array_elements(env, result, values);
 }
 
+static inline auto
+js_create_bigint(js_env_t *env, int64_t value, js_bigint_t &result) {
+  return js_create_bigint_int64(env, value, &result.value);
+}
+
+static inline auto
+js_create_bigint(js_env_t *env, uint64_t value, js_bigint_t &result) {
+  return js_create_bigint_uint64(env, value, &result.value);
+}
+
 template <size_t N>
 static inline auto
 js_create_string(js_env_t *env, const char value[N], js_string_t &result) {
@@ -1636,6 +1670,26 @@ js_get_typedarray_info(js_env_t *env, js_typedarray_t<T> &typedarray, std::span<
   view = std::span(data, len);
 
   return 0;
+}
+
+static inline auto
+js_get_value_bigint(js_env_t *env, const js_bigint_t &bigint, int64_t &result) {
+  return js_get_value_bigint_int64(env, bigint.value, &result, nullptr);
+}
+
+static inline auto
+js_get_value_bigint(js_env_t *env, const js_bigint_t &bigint, int64_t &result, bool &lossless) {
+  return js_get_value_bigint_int64(env, bigint.value, &result, &lossless);
+}
+
+static inline auto
+js_get_value_bigint(js_env_t *env, const js_bigint_t &bigint, uint64_t &result) {
+  return js_get_value_bigint_uint64(env, bigint.value, &result, nullptr);
+}
+
+static inline auto
+js_get_value_bigint(js_env_t *env, const js_bigint_t &bigint, uint64_t &result, bool &lossless) {
+  return js_get_value_bigint_uint64(env, bigint.value, &result, &lossless);
 }
 
 static inline auto
