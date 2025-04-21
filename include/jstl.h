@@ -1076,13 +1076,13 @@ js_typed_callback() {
       err = js_close_handle_scope(env, scope);
       assert(err == 0);
     } else {
-      js_handle_scope_t *scope;
-      err = js_open_handle_scope(env, &scope);
+      js_escapable_handle_scope_t *scope;
+      err = js_open_escapable_handle_scope(env, &scope);
       assert(err == 0);
 
       auto result = fn(env, js_unmarshall_typed_value<A>(env, args)...);
 
-      err = js_close_handle_scope(env, scope);
+      err = js_close_escapable_handle_scope(env, scope);
       assert(err == 0);
 
       // TODO: Escape result to outer scope when returning an ABI handle
