@@ -1057,25 +1057,16 @@ js_unmarshall_untyped_value(js_env_t *env, js_value_t *value) {
 }
 
 template <auto fn, typename R, typename... A>
-static inline auto
-js_typed_callback() {
-  return +[](js_type_info_t<A>::type... args, js_typed_callback_info_t *info) -> js_type_info_t<R>::type {
-    int err;
+struct js_typed_callback_t {
+  static inline auto
+  create() {
+    return +[](js_type_info_t<A>::type... args, js_typed_callback_info_t *info) -> js_type_info_t<R>::type {
+      int err;
 
-    js_env_t *env;
-    err = js_get_typed_callback_info(info, &env, nullptr);
-    assert(err == 0);
-
-    if constexpr (std::is_same<R, void>()) {
-      js_handle_scope_t *scope;
-      err = js_open_handle_scope(env, &scope);
+      js_env_t *env;
+      err = js_get_typed_callback_info(info, &env, nullptr);
       assert(err == 0);
 
-      fn(env, js_unmarshall_typed_value<A>(env, args)...);
-
-      err = js_close_handle_scope(env, scope);
-      assert(err == 0);
-    } else {
       js_escapable_handle_scope_t *scope;
       err = js_open_escapable_handle_scope(env, &scope);
       assert(err == 0);
@@ -1091,45 +1082,134 @@ js_typed_callback() {
       assert(err == 0);
 
       return result;
-    }
-  };
+    };
+  }
+};
+
+template <auto fn, typename... A>
+struct js_typed_callback_t<fn, void, A...> {
+  static inline auto
+  create() {
+    return +[](js_type_info_t<A>::type... args, js_typed_callback_info_t *info) -> void {
+      int err;
+
+      js_env_t *env;
+      err = js_get_typed_callback_info(info, &env, nullptr);
+      assert(err == 0);
+
+      js_handle_scope_t *scope;
+      err = js_open_handle_scope(env, &scope);
+      assert(err == 0);
+
+      fn(env, js_unmarshall_typed_value<A>(env, args)...);
+
+      err = js_close_handle_scope(env, scope);
+      assert(err == 0);
+    };
+  }
+};
+
+template <auto fn, typename R, typename... A>
+struct js_untyped_callback_t {
+  template <size_t... I>
+  static inline auto
+  create(std::index_sequence<I...>) {
+    return +[](js_env_t *env, js_callback_info_t *info) -> js_value_t * {
+      int err;
+
+      js_escapable_handle_scope_t *scope;
+      err = js_open_escapable_handle_scope(env, &scope);
+      assert(err == 0);
+
+      size_t argc = sizeof...(A);
+      js_value_t *argv[sizeof...(A)];
+
+      if constexpr (std::tuple_size<std::tuple<A...>>() > 0) {
+        using head = std::tuple_element<0, std::tuple<A...>>::type;
+
+        if constexpr (std::is_same<head, js_receiver_t>()) {
+          argc--;
+
+          err = js_get_callback_info(env, info, &argc, &argv[1], &argv[0], nullptr);
+          assert(err == 0);
+
+          argc++;
+        } else {
+          err = js_get_callback_info(env, info, &argc, argv, nullptr, nullptr);
+          assert(err == 0);
+        }
+
+        assert(argc == sizeof...(A));
+      }
+
+      auto result = js_marshall_untyped_value<R>(env, fn(env, js_unmarshall_untyped_value<A>(env, argv[I])...));
+
+      if constexpr (std::is_same<decltype(result), js_value_t *>()) {
+        err = js_escape_handle(env, scope, result, &result);
+        assert(err == 0);
+      }
+
+      err = js_close_escapable_handle_scope(env, scope);
+      assert(err == 0);
+
+      return result;
+    };
+  }
+};
+
+template <auto fn, typename... A>
+struct js_untyped_callback_t<fn, void, A...> {
+  template <size_t... I>
+  static inline auto
+  create(std::index_sequence<I...>) {
+    return +[](js_env_t *env, js_callback_info_t *info) -> js_value_t * {
+      int err;
+
+      js_handle_scope_t *scope;
+      err = js_open_handle_scope(env, &scope);
+      assert(err == 0);
+
+      size_t argc = sizeof...(A);
+      js_value_t *argv[sizeof...(A)];
+
+      if constexpr (std::tuple_size<std::tuple<A...>>() > 0) {
+        using head = std::tuple_element<0, std::tuple<A...>>::type;
+
+        if constexpr (std::is_same<head, js_receiver_t>()) {
+          argc--;
+
+          err = js_get_callback_info(env, info, &argc, &argv[1], &argv[0], nullptr);
+          assert(err == 0);
+
+          argc++;
+        } else {
+          err = js_get_callback_info(env, info, &argc, argv, nullptr, nullptr);
+          assert(err == 0);
+        }
+
+        assert(argc == sizeof...(A));
+      }
+
+      fn(env, js_unmarshall_untyped_value<A>(env, argv[I])...);
+
+      err = js_close_handle_scope(env, scope);
+      assert(err == 0);
+
+      return js_marshall_untyped_value(env);
+    };
+  }
+};
+
+template <auto fn, typename R, typename... A>
+static inline auto
+js_typed_callback() {
+  return js_typed_callback_t<fn, R, A...>::create();
 }
 
 template <auto fn, typename R, typename... A, size_t... I>
 static inline auto
-js_untyped_callback(std::index_sequence<I...>) {
-  return +[](js_env_t *env, js_callback_info_t *info) -> js_value_t * {
-    int err;
-
-    size_t argc = sizeof...(A);
-    js_value_t *argv[sizeof...(A)];
-
-    if constexpr (std::tuple_size<std::tuple<A...>>() > 0) {
-      using head = std::tuple_element<0, std::tuple<A...>>::type;
-
-      if constexpr (std::is_same<head, js_receiver_t>()) {
-        argc--;
-
-        err = js_get_callback_info(env, info, &argc, &argv[1], &argv[0], nullptr);
-        assert(err == 0);
-
-        argc++;
-      } else {
-        err = js_get_callback_info(env, info, &argc, argv, nullptr, nullptr);
-        assert(err == 0);
-      }
-
-      assert(argc == sizeof...(A));
-    }
-
-    if constexpr (std::is_same<R, void>()) {
-      fn(env, js_unmarshall_untyped_value<A>(env, argv[I])...);
-
-      return js_marshall_untyped_value(env);
-    } else {
-      return js_marshall_untyped_value<R>(env, fn(env, js_unmarshall_untyped_value<A>(env, argv[I])...));
-    }
-  };
+js_untyped_callback(std::index_sequence<I...> sequence) {
+  return js_untyped_callback_t<fn, R, A...>::create(sequence);
 }
 
 template <auto fn, typename R, typename... A>
