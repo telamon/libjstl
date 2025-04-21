@@ -73,31 +73,9 @@ struct js_name_t : js_primitive_t {
 };
 
 struct js_string_t : js_name_t {
-  js_string_view_t *view;
+  js_string_t() : js_name_t() {}
 
-  js_string_t() : js_name_t(), view(nullptr) {}
-
-  js_string_t(js_value_t *value) : js_name_t(value), view(nullptr) {}
-
-  js_string_t(const js_string_t &that) : js_name_t(that.value), view(nullptr) {}
-
-  ~js_string_t() {
-    if (view == nullptr) return;
-
-    int err;
-    err = js_release_string_view(nullptr, view);
-    assert(err == 0);
-  }
-
-  void
-  operator=(const js_string_t &that) {
-    if (this == &that) return;
-
-    this->~js_string_t();
-
-    value = that.value;
-    view = nullptr;
-  }
+  js_string_t(js_value_t *value) : js_name_t(value) {}
 };
 
 struct js_symbol_t : js_name_t {
@@ -126,31 +104,9 @@ struct js_arraybuffer_t : js_object_t {
 
 template <typename T>
 struct js_typedarray_t : js_object_t {
-  js_typedarray_view_t *view;
+  js_typedarray_t() : js_object_t() {}
 
-  js_typedarray_t() : js_object_t(), view(nullptr) {}
-
-  js_typedarray_t(js_value_t *value) : js_object_t(value), view(nullptr) {}
-
-  js_typedarray_t(const js_typedarray_t &that) : js_object_t(that.value), view(nullptr) {}
-
-  ~js_typedarray_t() {
-    if (view == nullptr) return;
-
-    int err;
-    err = js_release_typedarray_view(nullptr, view);
-    assert(err == 0);
-  }
-
-  void
-  operator=(const js_typedarray_t &that) {
-    if (this == &that) return;
-
-    this->~js_typedarray_t();
-
-    value = that.value;
-    view = nullptr;
-  }
+  js_typedarray_t(js_value_t *value) : js_object_t(value) {}
 };
 
 struct js_receiver_t : js_handle_t {
@@ -1111,9 +1067,25 @@ js_typed_callback() {
     assert(err == 0);
 
     if constexpr (std::is_same<R, void>()) {
+      js_handle_scope_t *scope;
+      err = js_open_handle_scope(env, &scope);
+      assert(err == 0);
+
       fn(env, js_unmarshall_typed_value<A>(env, args)...);
+
+      err = js_close_handle_scope(env, scope);
+      assert(err == 0);
     } else {
+      js_handle_scope_t *scope;
+      err = js_open_handle_scope(env, &scope);
+      assert(err == 0);
+
       auto result = fn(env, js_unmarshall_typed_value<A>(env, args)...);
+
+      err = js_close_handle_scope(env, scope);
+      assert(err == 0);
+
+      // TODO: Escape result to outer scope when returning an ABI handle
 
       return js_marshall_typed_value<R>(env, std::move(result));
     }
@@ -1624,16 +1596,7 @@ js_get_arraybuffer_info(js_env_t *env, const js_arraybuffer_t &arraybuffer, std:
 template <typename T>
 static inline auto
 js_get_typedarray_info(js_env_t *env, js_typedarray_t<T> &typedarray, T *&data, size_t &len) {
-  int err;
-
-  if (typedarray.view != nullptr) {
-    err = js_release_typedarray_view(env, typedarray.view);
-    if (err < 0) return err;
-
-    typedarray.view = nullptr;
-  }
-
-  return js_get_typedarray_view(env, typedarray.value, nullptr, (void **) &data, &len, &typedarray.view);
+  return js_get_typedarray_info(env, typedarray.value, nullptr, (void **) &data, &len, nullptr, nullptr);
 }
 
 template <typename T>
@@ -1641,15 +1604,8 @@ static inline auto
 js_get_typedarray_info(js_env_t *env, js_typedarray_t<uint8_t> &typedarray, T *&data) {
   int err;
 
-  if (typedarray.view != nullptr) {
-    err = js_release_typedarray_view(env, typedarray.view);
-    if (err < 0) return err;
-
-    typedarray.view = nullptr;
-  }
-
   size_t len;
-  err = js_get_typedarray_view(env, typedarray.value, nullptr, (void **) &data, &len, &typedarray.view);
+  err = js_get_typedarray_info(env, typedarray.value, nullptr, (void **) &data, &len, nullptr, nullptr);
   if (err < 0) return err;
 
   assert(len == sizeof(T));
