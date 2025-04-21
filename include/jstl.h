@@ -1144,10 +1144,8 @@ struct js_untyped_callback_t {
 
       auto result = js_marshall_untyped_value<R>(env, fn(env, js_unmarshall_untyped_value<A>(env, argv[I])...));
 
-      if constexpr (std::is_same<decltype(result), js_value_t *>()) {
-        err = js_escape_handle(env, scope, result, &result);
-        assert(err == 0);
-      }
+      err = js_escape_handle(env, scope, result, &result);
+      assert(err == 0);
 
       err = js_close_escapable_handle_scope(env, scope);
       assert(err == 0);
