@@ -1080,14 +1080,17 @@ js_typed_callback() {
       err = js_open_escapable_handle_scope(env, &scope);
       assert(err == 0);
 
-      auto result = fn(env, js_unmarshall_typed_value<A>(env, args)...);
+      auto result = js_marshall_typed_value<R>(env, fn(env, js_unmarshall_typed_value<A>(env, args)...));
+
+      if constexpr (std::is_same<decltype(result), js_value_t *>()) {
+        err = js_escape_handle(env, scope, result, &result);
+        assert(err == 0);
+      }
 
       err = js_close_escapable_handle_scope(env, scope);
       assert(err == 0);
 
-      // TODO: Escape result to outer scope when returning an ABI handle
-
-      return js_marshall_typed_value<R>(env, std::move(result));
+      return result;
     }
   };
 }
@@ -1124,9 +1127,7 @@ js_untyped_callback(std::index_sequence<I...>) {
 
       return js_marshall_untyped_value(env);
     } else {
-      auto result = fn(env, js_unmarshall_untyped_value<A>(env, argv[I])...);
-
-      return js_marshall_untyped_value<R>(env, std::move(result));
+      return js_marshall_untyped_value<R>(env, fn(env, js_unmarshall_untyped_value<A>(env, argv[I])...));
     }
   };
 }
