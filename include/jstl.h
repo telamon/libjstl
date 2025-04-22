@@ -984,6 +984,19 @@ struct js_function_info_t<fn> {
   }
 };
 
+template <typename...>
+struct js_argument_info_t;
+
+template <>
+struct js_argument_info_t<> {
+  static constexpr bool has_receiver = false;
+};
+
+template <typename T, typename... R>
+struct js_argument_info_t<T, R...> {
+  static constexpr bool has_receiver = std::is_same<T, js_receiver_t>();
+};
+
 template <typename T>
 struct js_property_t {
   std::string name;
@@ -1124,23 +1137,19 @@ struct js_untyped_callback_t {
       size_t argc = sizeof...(A);
       js_value_t *argv[sizeof...(A)];
 
-      if constexpr (sizeof...(A) > 0) {
-        using head = typename std::tuple_element<0, std::tuple<A...>>::type;
+      if constexpr (js_argument_info_t<A...>::has_receiver) {
+        argc--;
 
-        if constexpr (std::is_same<head, js_receiver_t>()) {
-          argc--;
+        err = js_get_callback_info(env, info, &argc, &argv[1], &argv[0], nullptr);
+        assert(err == 0);
 
-          err = js_get_callback_info(env, info, &argc, &argv[1], &argv[0], nullptr);
-          assert(err == 0);
-
-          argc++;
-        } else {
-          err = js_get_callback_info(env, info, &argc, argv, nullptr, nullptr);
-          assert(err == 0);
-        }
-
-        assert(argc == sizeof...(A));
+        argc++;
+      } else {
+        err = js_get_callback_info(env, info, &argc, argv, nullptr, nullptr);
+        assert(err == 0);
       }
+
+      assert(argc == sizeof...(A));
 
       auto result = js_marshall_untyped_value<R>(env, fn(env, js_unmarshall_untyped_value<A>(env, argv[I])...));
 
@@ -1170,23 +1179,19 @@ struct js_untyped_callback_t<fn, void, A...> {
       size_t argc = sizeof...(A);
       js_value_t *argv[sizeof...(A)];
 
-      if constexpr (sizeof...(A) > 0) {
-        using head = typename std::tuple_element<0, std::tuple<A...>>::type;
+      if constexpr (js_argument_info_t<A...>::has_receiver) {
+        argc--;
 
-        if constexpr (std::is_same<head, js_receiver_t>()) {
-          argc--;
+        err = js_get_callback_info(env, info, &argc, &argv[1], &argv[0], nullptr);
+        assert(err == 0);
 
-          err = js_get_callback_info(env, info, &argc, &argv[1], &argv[0], nullptr);
-          assert(err == 0);
-
-          argc++;
-        } else {
-          err = js_get_callback_info(env, info, &argc, argv, nullptr, nullptr);
-          assert(err == 0);
-        }
-
-        assert(argc == sizeof...(A));
+        argc++;
+      } else {
+        err = js_get_callback_info(env, info, &argc, argv, nullptr, nullptr);
+        assert(err == 0);
       }
+
+      assert(argc == sizeof...(A));
 
       fn(env, js_unmarshall_untyped_value<A>(env, argv[I])...);
 
@@ -1282,16 +1287,9 @@ js_call_function(js_env_t *env, const js_function_t<void, A...> &function, const
 
   size_t offset = 0;
 
-  if constexpr (sizeof...(A) > 0) {
-    using head = typename std::tuple_element<0, std::tuple<A...>>::type;
-
-    if constexpr (std::is_same<head, js_receiver_t>()) {
-      receiver = argv[0];
-      offset = 1;
-    } else {
-      err = js_get_global(env, &receiver);
-      assert(err == 0);
-    }
+  if constexpr (js_argument_info_t<A...>::has_receiver) {
+    receiver = argv[0];
+    offset = 1;
   } else {
     err = js_get_global(env, &receiver);
     assert(err == 0);
@@ -1315,16 +1313,9 @@ js_call_function(js_env_t *env, const js_function_t<R, A...> &function, const A 
 
   size_t offset = 0;
 
-  if constexpr (sizeof...(A) > 0) {
-    using head = typename std::tuple_element<0, std::tuple<A...>>::type;
-
-    if constexpr (std::is_same<head, js_receiver_t>()) {
-      receiver = argv[0];
-      offset = 1;
-    } else {
-      err = js_get_global(env, &receiver);
-      assert(err == 0);
-    }
+  if constexpr (js_argument_info_t<A...>::has_receiver) {
+    receiver = argv[0];
+    offset = 1;
   } else {
     err = js_get_global(env, &receiver);
     assert(err == 0);
