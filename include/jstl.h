@@ -1124,7 +1124,7 @@ struct js_untyped_callback_t {
       size_t argc = sizeof...(A);
       js_value_t *argv[sizeof...(A)];
 
-      if constexpr (std::tuple_size<std::tuple<A...>>() > 0) {
+      if constexpr (sizeof...(A) > 0) {
         using head = typename std::tuple_element<0, std::tuple<A...>>::type;
 
         if constexpr (std::is_same<head, js_receiver_t>()) {
@@ -1170,7 +1170,7 @@ struct js_untyped_callback_t<fn, void, A...> {
       size_t argc = sizeof...(A);
       js_value_t *argv[sizeof...(A)];
 
-      if constexpr (std::tuple_size<std::tuple<A...>>() > 0) {
+      if constexpr (sizeof...(A) > 0) {
         using head = typename std::tuple_element<0, std::tuple<A...>>::type;
 
         if constexpr (std::is_same<head, js_receiver_t>()) {
@@ -1282,7 +1282,7 @@ js_call_function(js_env_t *env, const js_function_t<void, A...> &function, const
 
   size_t offset = 0;
 
-  if constexpr (std::tuple_size<std::tuple<A...>>() > 0) {
+  if constexpr (sizeof...(A) > 0) {
     using head = typename std::tuple_element<0, std::tuple<A...>>::type;
 
     if constexpr (std::is_same<head, js_receiver_t>()) {
@@ -1315,7 +1315,7 @@ js_call_function(js_env_t *env, const js_function_t<R, A...> &function, const A 
 
   size_t offset = 0;
 
-  if constexpr (std::tuple_size<std::tuple<A...>>() > 0) {
+  if constexpr (sizeof...(A) > 0) {
     using head = typename std::tuple_element<0, std::tuple<A...>>::type;
 
     if constexpr (std::is_same<head, js_receiver_t>()) {
