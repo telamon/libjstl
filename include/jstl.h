@@ -1060,7 +1060,7 @@ template <auto fn, typename R, typename... A>
 struct js_typed_callback_t {
   static inline auto
   create() {
-    return +[](js_type_info_t<A>::type... args, js_typed_callback_info_t *info) -> js_type_info_t<R>::type {
+    return +[](typename js_type_info_t<A>::type... args, js_typed_callback_info_t *info) -> typename js_type_info_t<R>::type {
       int err;
 
       js_env_t *env;
@@ -1090,7 +1090,7 @@ template <auto fn, typename... A>
 struct js_typed_callback_t<fn, void, A...> {
   static inline auto
   create() {
-    return +[](js_type_info_t<A>::type... args, js_typed_callback_info_t *info) -> void {
+    return +[](typename js_type_info_t<A>::type... args, js_typed_callback_info_t *info) -> void {
       int err;
 
       js_env_t *env;
@@ -1125,7 +1125,7 @@ struct js_untyped_callback_t {
       js_value_t *argv[sizeof...(A)];
 
       if constexpr (std::tuple_size<std::tuple<A...>>() > 0) {
-        using head = std::tuple_element<0, std::tuple<A...>>::type;
+        using head = typename std::tuple_element<0, std::tuple<A...>>::type;
 
         if constexpr (std::is_same<head, js_receiver_t>()) {
           argc--;
@@ -1171,7 +1171,7 @@ struct js_untyped_callback_t<fn, void, A...> {
       js_value_t *argv[sizeof...(A)];
 
       if constexpr (std::tuple_size<std::tuple<A...>>() > 0) {
-        using head = std::tuple_element<0, std::tuple<A...>>::type;
+        using head = typename std::tuple_element<0, std::tuple<A...>>::type;
 
         if constexpr (std::is_same<head, js_receiver_t>()) {
           argc--;
@@ -1283,7 +1283,7 @@ js_call_function(js_env_t *env, const js_function_t<void, A...> &function, const
   size_t offset = 0;
 
   if constexpr (std::tuple_size<std::tuple<A...>>() > 0) {
-    using head = std::tuple_element<0, std::tuple<A...>>::type;
+    using head = typename std::tuple_element<0, std::tuple<A...>>::type;
 
     if constexpr (std::is_same<head, js_receiver_t>()) {
       receiver = argv[0];
@@ -1316,7 +1316,7 @@ js_call_function(js_env_t *env, const js_function_t<R, A...> &function, const A 
   size_t offset = 0;
 
   if constexpr (std::tuple_size<std::tuple<A...>>() > 0) {
-    using head = std::tuple_element<0, std::tuple<A...>>::type;
+    using head = typename std::tuple_element<0, std::tuple<A...>>::type;
 
     if constexpr (std::is_same<head, js_receiver_t>()) {
       receiver = argv[0];
