@@ -198,10 +198,7 @@ struct js_typedarray_info_t;
 
 template <>
 struct js_typedarray_info_t<int8_t> {
-  static auto
-  type() {
-    return js_int8array;
-  }
+  static constexpr auto type = js_int8array;
 
   static constexpr auto label = "int8array";
 
@@ -213,10 +210,7 @@ struct js_typedarray_info_t<int8_t> {
 
 template <>
 struct js_typedarray_info_t<uint8_t> {
-  static auto
-  type() {
-    return js_uint8array;
-  }
+  static constexpr auto type = js_uint8array;
 
   static constexpr auto label = "uint8array";
 
@@ -228,10 +222,7 @@ struct js_typedarray_info_t<uint8_t> {
 
 template <>
 struct js_typedarray_info_t<int16_t> {
-  static auto
-  type() {
-    return js_int16array;
-  }
+  static constexpr auto type = js_int16array;
 
   static constexpr auto label = "int16array";
 
@@ -243,10 +234,7 @@ struct js_typedarray_info_t<int16_t> {
 
 template <>
 struct js_typedarray_info_t<uint16_t> {
-  static auto
-  type() {
-    return js_uint16array;
-  }
+  static constexpr auto type = js_uint16array;
 
   static constexpr auto label = "uint16array";
 
@@ -258,10 +246,7 @@ struct js_typedarray_info_t<uint16_t> {
 
 template <>
 struct js_typedarray_info_t<int32_t> {
-  static auto
-  type() {
-    return js_int32array;
-  }
+  static constexpr auto type = js_int32array;
 
   static constexpr auto label = "int32array";
 
@@ -273,10 +258,7 @@ struct js_typedarray_info_t<int32_t> {
 
 template <>
 struct js_typedarray_info_t<uint32_t> {
-  static auto
-  type() {
-    return js_uint32array;
-  }
+  static constexpr auto type = js_uint32array;
 
   static constexpr auto label = "uint32array";
 
@@ -288,10 +270,7 @@ struct js_typedarray_info_t<uint32_t> {
 
 template <>
 struct js_typedarray_info_t<int64_t> {
-  static auto
-  type() {
-    return js_bigint64array;
-  }
+  static constexpr auto type = js_bigint64array;
 
   static constexpr auto label = "bigint64array";
 
@@ -303,10 +282,7 @@ struct js_typedarray_info_t<int64_t> {
 
 template <>
 struct js_typedarray_info_t<uint64_t> {
-  static auto
-  type() {
-    return js_biguint64array;
-  }
+  static constexpr auto type = js_biguint64array;
 
   static constexpr auto label = "biguint64array";
 
@@ -318,10 +294,7 @@ struct js_typedarray_info_t<uint64_t> {
 
 template <>
 struct js_typedarray_info_t<float> {
-  static auto
-  type() {
-    return js_float32array;
-  }
+  static constexpr auto type = js_float32array;
 
   static constexpr auto label = "float32array";
 
@@ -333,10 +306,7 @@ struct js_typedarray_info_t<float> {
 
 template <>
 struct js_typedarray_info_t<double> {
-  static auto
-  type() {
-    return js_float64array;
-  }
+  static constexpr auto type = js_float64array;
 
   static constexpr auto label = "float64array";
 
@@ -359,10 +329,7 @@ template <>
 struct js_type_info_t<void> {
   using type = void;
 
-  static auto
-  signature() {
-    return js_undefined;
-  }
+  static constexpr auto signature = js_undefined;
 
   template <bool checked>
   static auto
@@ -375,10 +342,7 @@ template <>
 struct js_type_info_t<bool> {
   using type = bool;
 
-  static auto
-  signature() {
-    return js_boolean;
-  }
+  static constexpr auto signature = js_boolean;
 
   template <bool checked>
   static auto
@@ -419,10 +383,7 @@ template <>
 struct js_type_info_t<int32_t> {
   using type = int32_t;
 
-  static auto
-  signature() {
-    return js_int32;
-  }
+  static constexpr auto signature = js_int32;
 
   template <bool checked>
   static auto
@@ -463,10 +424,7 @@ template <>
 struct js_type_info_t<uint32_t> {
   using type = uint32_t;
 
-  static auto
-  signature() {
-    return js_uint32;
-  }
+  static constexpr auto signature = js_uint32;
 
   template <bool checked>
   static auto
@@ -507,10 +465,7 @@ template <>
 struct js_type_info_t<int64_t> {
   using type = int64_t;
 
-  static auto
-  signature() {
-    return js_int64;
-  }
+  static constexpr auto signature = js_int64;
 
   template <bool checked>
   static auto
@@ -551,10 +506,7 @@ template <>
 struct js_type_info_t<double> {
   using type = double;
 
-  static auto
-  signature() {
-    return js_float64;
-  }
+  static constexpr auto signature = js_float64;
 
   template <bool checked>
   static auto
@@ -595,10 +547,7 @@ template <>
 struct js_type_info_t<js_bigint_t> {
   using type = js_value_t *;
 
-  static auto
-  signature() {
-    return js_bigint;
-  }
+  static constexpr auto signature = js_bigint;
 
   template <bool checked>
   static auto
@@ -627,10 +576,7 @@ template <>
 struct js_type_info_t<js_string_t> {
   using type = js_value_t *;
 
-  static auto
-  signature() {
-    return js_string;
-  }
+  static constexpr auto signature = js_string;
 
   template <bool checked>
   static auto
@@ -659,10 +605,7 @@ template <>
 struct js_type_info_t<js_symbol_t> {
   using type = js_value_t *;
 
-  static auto
-  signature() {
-    return js_symbol;
-  }
+  static constexpr auto signature = js_symbol;
 
   template <bool checked>
   static auto
@@ -691,10 +634,7 @@ template <>
 struct js_type_info_t<js_object_t> {
   using type = js_value_t *;
 
-  static auto
-  signature() {
-    return js_object;
-  }
+  static constexpr auto signature = js_object;
 
   template <bool checked>
   static auto
@@ -723,10 +663,7 @@ template <>
 struct js_type_info_t<js_array_t> {
   using type = js_value_t *;
 
-  static auto
-  signature() {
-    return js_object;
-  }
+  static constexpr auto signature = js_object;
 
   template <bool checked>
   static auto
@@ -755,10 +692,7 @@ template <>
 struct js_type_info_t<js_arraybuffer_t> {
   using type = js_value_t *;
 
-  static auto
-  signature() {
-    return js_object;
-  }
+  static constexpr auto signature = js_object;
 
   template <bool checked>
   static auto
@@ -787,10 +721,7 @@ template <typename T>
 struct js_type_info_t<js_typedarray_t<T>> {
   using type = js_value_t *;
 
-  static auto
-  signature() {
-    return js_object;
-  }
+  static constexpr auto signature = js_object;
 
   template <bool checked>
   static auto
@@ -819,10 +750,7 @@ template <>
 struct js_type_info_t<js_receiver_t> {
   using type = js_value_t *;
 
-  static auto
-  signature() {
-    return js_object;
-  }
+  static constexpr auto signature = js_object;
 
   template <bool checked>
   static auto
@@ -845,10 +773,7 @@ template <typename R, typename... A>
 struct js_type_info_t<js_function_t<R, A...>> {
   using type = js_value_t *;
 
-  static auto
-  signature() {
-    return js_function;
-  }
+  static constexpr auto signature = js_function;
 
   template <bool checked>
   static auto
@@ -869,10 +794,7 @@ template <>
 struct js_type_info_t<js_external_t> {
   using type = js_value_t *;
 
-  static auto
-  signature() {
-    return js_external;
-  }
+  static constexpr auto signature = js_external;
 
   template <bool checked>
   static auto
@@ -901,10 +823,7 @@ template <typename T>
 struct js_type_info_t<T *> {
   using type = T *;
 
-  static auto
-  signature() {
-    return js_external;
-  }
+  static constexpr auto signature = js_external;
 
   template <bool checked>
   static auto
@@ -945,10 +864,7 @@ template <size_t N>
 struct js_type_info_t<char[N]> {
   using type = js_value_t *;
 
-  static auto
-  signature() {
-    return js_string;
-  }
+  static constexpr auto signature = js_string;
 
   template <bool checked>
   static auto
@@ -980,10 +896,7 @@ template <size_t N>
 struct js_type_info_t<const char[N]> {
   using type = js_value_t *;
 
-  static auto
-  signature() {
-    return js_string;
-  }
+  static constexpr auto signature = js_string;
 
   template <bool checked>
   static auto
@@ -996,10 +909,7 @@ template <>
 struct js_type_info_t<char *> {
   using type = js_value_t *;
 
-  static auto
-  signature() {
-    return js_string;
-  }
+  static constexpr auto signature = js_string;
 
   template <bool checked>
   static auto
@@ -1012,10 +922,7 @@ template <>
 struct js_type_info_t<const char *> {
   using type = js_value_t *;
 
-  static auto
-  signature() {
-    return js_string;
-  }
+  static constexpr auto signature = js_string;
 
   template <bool checked>
   static auto
@@ -1028,10 +935,7 @@ template <>
 struct js_type_info_t<std::string> {
   using type = js_value_t *;
 
-  static auto
-  signature() {
-    return js_string;
-  }
+  static constexpr auto signature = js_string;
 
   template <bool checked>
   static auto
@@ -1063,10 +967,7 @@ template <typename T, size_t N>
 struct js_type_info_t<T[N]> {
   using type = js_value_t *;
 
-  static auto
-  signature() {
-    return js_object;
-  }
+  static constexpr auto signature = js_object;
 
   template <bool checked>
   static auto
@@ -1116,10 +1017,7 @@ template <typename T, size_t N>
 struct js_type_info_t<std::array<T, N>> {
   using type = js_value_t *;
 
-  static auto
-  signature() {
-    return js_object;
-  }
+  static constexpr auto signature = js_object;
 
   template <bool checked>
   static auto
@@ -1169,10 +1067,7 @@ template <typename T>
 struct js_type_info_t<std::vector<T>> {
   using type = js_value_t *;
 
-  static auto
-  signature() {
-    return js_object;
-  }
+  static constexpr auto signature = js_object;
 
   template <bool checked>
   static auto
@@ -1525,11 +1420,11 @@ js_create_function(js_env_t *env, const char *name, size_t len, js_function_t<R,
   js_callback_signature_t signature;
 
   int args[] = {
-    js_type_info_t<A>::signature()...
+    js_type_info_t<A>::signature...
   };
 
   signature.version = 0;
-  signature.result = js_type_info_t<R>::signature();
+  signature.result = js_type_info_t<R>::signature;
   signature.args_len = sizeof...(A);
   signature.args = args;
 
@@ -1801,7 +1696,7 @@ js_create_arraybuffer(js_env_t *env, const std::vector<T> &data, js_arraybuffer_
 template <typename T>
 static inline auto
 js_create_typedarray(js_env_t *env, size_t len, const js_arraybuffer_t &arraybuffer, size_t offset, js_typedarray_t<T> &result) {
-  return js_create_typedarray(env, js_typedarray_info_t<T>::type(), len, arraybuffer.value, offset, &result.value);
+  return js_create_typedarray(env, js_typedarray_info_t<T>::type, len, arraybuffer.value, offset, &result.value);
 }
 
 template <typename T>
