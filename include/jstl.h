@@ -1221,7 +1221,7 @@ js_marshall_untyped_value(js_env_t *env, T value) {
   return result;
 }
 
-template <bool checked>
+template <bool checked = js_is_debug>
 static inline auto
 js_marshall_untyped_value(js_env_t *env) {
   int err;
