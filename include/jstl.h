@@ -1310,15 +1310,7 @@ struct js_typed_callback_t<fn> {
   static inline auto
   create() {
     return +[](typename js_type_info_t<A>::type... args, js_typed_callback_info_t *info) -> typename js_type_info_t<R>::type {
-      typename js_type_info_t<R>::type result;
-
-      try {
-        result = js_marshall_typed_value<checked, R>(fn(js_unmarshall_typed_value<checked, A>(args)...));
-      } catch (int err) {
-        assert(err != 0);
-      }
-
-      return result;
+      return js_marshall_typed_value<checked, R>(fn(js_unmarshall_typed_value<checked, A>(args)...));
     };
   }
 };
@@ -1371,11 +1363,7 @@ struct js_typed_callback_t<fn> {
   static inline auto
   create() {
     return +[](typename js_type_info_t<A>::type... args, js_typed_callback_info_t *info) -> void {
-      try {
-        fn(js_unmarshall_typed_value<checked, A>(args)...);
-      } catch (int err) {
-        assert(err != 0);
-      }
+      fn(js_unmarshall_typed_value<checked, A>(args)...);
     };
   }
 };
