@@ -3,6 +3,7 @@ fetch_package("github:holepunchto/libjs")
 list(APPEND tests
   create-function-pointer
   create-function-receiver
+  create-function-receiver-no-env
   create-function-return-array-int32
   create-function-return-bool
   create-function-return-double
