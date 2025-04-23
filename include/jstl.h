@@ -1203,7 +1203,7 @@ js_marshall_typed_value(js_env_t *env, T value) {
 
   typename js_type_info_t<T>::type result;
   err = js_type_info_t<T>::template marshall<checked>(env, value, result);
-  assert(err == 0);
+  if (err < 0) throw err;
 
   return result;
 }
@@ -1215,7 +1215,7 @@ js_marshall_untyped_value(js_env_t *env, T value) {
 
   js_value_t *result;
   err = js_type_info_t<T>::template marshall<checked>(env, value, result);
-  assert(err == 0);
+  if (err < 0) throw err;
 
   return result;
 }
@@ -1227,7 +1227,7 @@ js_marshall_untyped_value(js_env_t *env) {
 
   js_value_t *result;
   err = js_type_info_t<void>::template marshall<checked>(env, result);
-  assert(err == 0);
+  if (err < 0) throw err;
 
   return result;
 }
@@ -1239,7 +1239,7 @@ js_unmarshall_typed_value(js_env_t *env, typename js_type_info_t<T>::type value)
 
   T result;
   err = js_type_info_t<T>::template unmarshall<checked>(env, value, result);
-  assert(err == 0);
+  if (err < 0) throw err;
 
   return result;
 }
@@ -1251,7 +1251,7 @@ js_unmarshall_untyped_value(js_env_t *env, js_value_t *value) {
 
   T result;
   err = js_type_info_t<T>::template unmarshall<checked>(env, value, result);
-  assert(err == 0);
+  if (err < 0) throw err;
 
   return result;
 }
@@ -1272,11 +1272,17 @@ struct js_typed_callback_t {
       err = js_open_escapable_handle_scope(env, &scope);
       assert(err == 0);
 
-      auto result = js_marshall_typed_value<checked, R>(env, fn(env, js_unmarshall_typed_value<checked, A>(env, args)...));
+      typename js_type_info_t<R>::type result;
 
-      if constexpr (std::is_same<decltype(result), js_value_t *>()) {
-        err = js_escape_handle(env, scope, result, &result);
-        assert(err == 0);
+      try {
+        result = js_marshall_typed_value<checked, R>(env, fn(env, js_unmarshall_typed_value<checked, A>(env, args)...));
+
+        if constexpr (std::is_same<decltype(result), js_value_t *>()) {
+          err = js_escape_handle(env, scope, result, &result);
+          assert(err == 0);
+        }
+      } catch (int err) {
+        assert(err != 0);
       }
 
       err = js_close_escapable_handle_scope(env, scope);
@@ -1303,7 +1309,11 @@ struct js_typed_callback_t<fn, void, A...> {
       err = js_open_handle_scope(env, &scope);
       assert(err == 0);
 
-      fn(env, js_unmarshall_typed_value<checked, A>(env, args)...);
+      try {
+        fn(env, js_unmarshall_typed_value<checked, A>(env, args)...);
+      } catch (int err) {
+        assert(err != 0);
+      }
 
       err = js_close_handle_scope(env, scope);
       assert(err == 0);
@@ -1340,10 +1350,16 @@ struct js_untyped_callback_t {
 
       assert(argc == sizeof...(A));
 
-      auto result = js_marshall_untyped_value<checked, R>(env, fn(env, js_unmarshall_untyped_value<checked, A>(env, argv[I])...));
+      js_value_t *result;
 
-      err = js_escape_handle(env, scope, result, &result);
-      assert(err == 0);
+      try {
+        result = js_marshall_untyped_value<checked, R>(env, fn(env, js_unmarshall_untyped_value<checked, A>(env, argv[I])...));
+
+        err = js_escape_handle(env, scope, result, &result);
+        assert(err == 0);
+      } catch (int err) {
+        assert(err != 0);
+      }
 
       err = js_close_escapable_handle_scope(env, scope);
       assert(err == 0);
@@ -1382,7 +1398,11 @@ struct js_untyped_callback_t<fn, void, A...> {
 
       assert(argc == sizeof...(A));
 
-      fn(env, js_unmarshall_untyped_value<checked, A>(env, argv[I])...);
+      try {
+        fn(env, js_unmarshall_untyped_value<checked, A>(env, argv[I])...);
+      } catch (int err) {
+        assert(err != 0);
+      }
 
       err = js_close_handle_scope(env, scope);
       assert(err == 0);
@@ -1468,23 +1488,27 @@ js_call_function(js_env_t *env, const js_function_t<void, A...> &function, const
 
   size_t argc = sizeof...(A);
 
-  js_value_t *argv[] = {
-    js_marshall_untyped_value<checked, A>(env, args...)...
-  };
+  try {
+    js_value_t *argv[] = {
+      js_marshall_untyped_value<checked, A>(env, args...)...
+    };
 
-  js_value_t *receiver;
+    js_value_t *receiver;
 
-  size_t offset = 0;
+    size_t offset = 0;
 
-  if constexpr (js_argument_info_t<A...>::has_receiver) {
-    receiver = argv[0];
-    offset = 1;
-  } else {
-    err = js_get_global(env, &receiver);
-    assert(err == 0);
+    if constexpr (js_argument_info_t<A...>::has_receiver) {
+      receiver = argv[0];
+      offset = 1;
+    } else {
+      err = js_get_global(env, &receiver);
+      assert(err == 0);
+    }
+
+    return js_call_function(env, receiver, function.value, argc - offset, &argv[offset], nullptr);
+  } catch (int err) {
+    return err;
   }
-
-  return js_call_function(env, receiver, function.value, argc - offset, &argv[offset], nullptr);
 }
 
 template <bool checked = js_default_checked, typename R, typename... A>
@@ -1494,29 +1518,33 @@ js_call_function(js_env_t *env, const js_function_t<R, A...> &function, const A 
 
   size_t argc = sizeof...(A);
 
-  js_value_t *argv[] = {
-    js_marshall_untyped_value<checked, A>(env, args...)...
-  };
+  try {
+    js_value_t *argv[] = {
+      js_marshall_untyped_value<checked, A>(env, args...)...
+    };
 
-  js_value_t *receiver;
+    js_value_t *receiver;
 
-  size_t offset = 0;
+    size_t offset = 0;
 
-  if constexpr (js_argument_info_t<A...>::has_receiver) {
-    receiver = argv[0];
-    offset = 1;
-  } else {
-    err = js_get_global(env, &receiver);
-    assert(err == 0);
+    if constexpr (js_argument_info_t<A...>::has_receiver) {
+      receiver = argv[0];
+      offset = 1;
+    } else {
+      err = js_get_global(env, &receiver);
+      assert(err == 0);
+    }
+
+    js_value_t *value;
+    err = js_call_function(env, receiver, function.value, argc - offset, &argv[offset], &value);
+    if (err < 0) return err;
+
+    result = js_unmarshall_untyped_value<checked, R>(env, value);
+
+    return 0;
+  } catch (int err) {
+    return err;
   }
-
-  js_value_t *value;
-  err = js_call_function(env, receiver, function.value, argc - offset, &argv[offset], &value);
-  if (err < 0) return err;
-
-  result = js_unmarshall_untyped_value<checked, R>(env, value);
-
-  return 0;
 }
 
 static inline auto
