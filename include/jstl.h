@@ -507,7 +507,7 @@ js_is_int64(js_env_t *env, const js_handle_t &value, bool &result) {
   err = js_get_value_double(env, static_cast<js_value_t *>(value), &n);
   if (err < 0) return err;
 
-  result = modf(n, &i) == 0.0 && i >= INT64_MIN && i <= INT64_MAX;
+  result = modf(n, &i) == 0.0 && i >= INT64_MIN && static_cast<int64_t>(i) <= INT64_MAX;
 
   return 0;
 }
@@ -524,7 +524,7 @@ js_is_uint64(js_env_t *env, const js_handle_t &value, bool &result) {
   err = js_get_value_double(env, static_cast<js_value_t *>(value), &n);
   if (err < 0) return err;
 
-  result = modf(n, &i) == 0.0 && i >= 0.0 && i <= UINT64_MAX;
+  result = modf(n, &i) == 0.0 && i >= 0.0 && static_cast<uint64_t>(i) <= UINT64_MAX;
 
   return 0;
 }
